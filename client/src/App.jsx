@@ -1,10 +1,14 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { AuthProvider } from "@/context/AuthContext";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AppLayout from "@/layout/AppLayout";
 
 // Pages — lazy-loaded for performance
 import { lazy, Suspense } from "react";
 
+const Login = lazy(() => import("@/pages/Login"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Reservists = lazy(() => import("@/pages/Reservists"));
 const Reservations = lazy(() => import("@/pages/Reservations"));
 const Groups = lazy(() => import("@/pages/Groups"));
 const Areas = lazy(() => import("@/pages/Areas"));
@@ -13,6 +17,7 @@ const Attendance = lazy(() => import("@/pages/Attendance"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const Logistics = lazy(() => import("@/pages/Logistics"));
 const Reports = lazy(() => import("@/pages/Reports"));
+const Announcements = lazy(() => import("@/pages/Announcements"));
 
 // Simple fallback while lazy chunks load
 function PageLoader() {
@@ -24,15 +29,37 @@ function PageLoader() {
 }
 
 const router = createBrowserRouter([
+  // Public routes (no layout)
+  {
+    path: "/login",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <Login />
+      </Suspense>
+    ),
+  },
+  // Protected routes with AppLayout
   {
     path: "/",
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         index: true,
         element: (
           <Suspense fallback={<PageLoader />}>
             <Dashboard />
+          </Suspense>
+        ),
+      },
+      {
+        path: "reservists",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Reservists />
           </Suspense>
         ),
       },
@@ -97,6 +124,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <Reports />
+          </Suspense>
+        ),
+      },
+      {
+        path: "announcements",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <Announcements />
           </Suspense>
         ),
       },

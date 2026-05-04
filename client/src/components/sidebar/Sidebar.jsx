@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ChevronLeft, Bell, Settings } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { ChevronLeft, Bell, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SidebarItem from "./SidebarItem";
-import { menuItems } from "@/config/menuItems";
+import { menuItems, systemMenuItems } from "@/config/menuItems";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Sidebar({ collapsed: controlledCollapsed, onToggle }) {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const { user, logout } = useAuth();
+  const location = useLocation();
 
   const isCollapsed =
     controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
@@ -14,6 +17,23 @@ export default function Sidebar({ collapsed: controlledCollapsed, onToggle }) {
   const handleToggle = () => {
     if (onToggle) onToggle();
     else setInternalCollapsed((v) => !v);
+  };
+
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (!item.roles) return true; // No role restriction
+    if (!user) return false; // No user, no access
+    return item.roles.includes(user.role);
+  });
+
+  const filteredSystemItems = systemMenuItems.filter((item) => {
+    if (!item.roles) return true;
+    if (!user) return false;
+    return item.roles.includes(user.role);
+  });
+
+  const handleLogout = () => {
+    logout();
   };
 
   return (
@@ -124,7 +144,7 @@ export default function Sidebar({ collapsed: controlledCollapsed, onToggle }) {
         )}
 
         <ul className="space-y-0.5" role="list">
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <li key={item.path}>
               <SidebarItem item={item} isCollapsed={isCollapsed} />
             </li>
@@ -140,18 +160,11 @@ export default function Sidebar({ collapsed: controlledCollapsed, onToggle }) {
         )}
 
         <ul className="space-y-0.5" role="list">
-          <li>
-            <SidebarItem
-              item={{ name: "Alerts", path: "/alerts", icon: Bell, description: "Notifications" }}
-              isCollapsed={isCollapsed}
-            />
-          </li>
-          <li>
-            <SidebarItem
-              item={{ name: "Settings", path: "/settings", icon: Settings, description: "Preferences" }}
-              isCollapsed={isCollapsed}
-            />
-          </li>
+          {filteredSystemItems.map((item) => (
+            <li key={item.path}>
+              <SidebarItem item={item} isCollapsed={isCollapsed} />
+            </li>
+          ))}
         </ul>
       </nav>
 
@@ -165,19 +178,35 @@ export default function Sidebar({ collapsed: controlledCollapsed, onToggle }) {
         )}
       >
         <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 text-xs font-bold text-white shadow-sm">
-          CO
+          {user?.id_number?.charAt(0).toUpperCase() || "U"}
           <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border-2 border-white dark:border-neutral-900 bg-emerald-400" />
         </span>
 
         {!isCollapsed && (
-          <div className="flex flex-col leading-tight overflow-hidden">
+          <div className="flex flex-col leading-tight overflow-hidden flex-1">
             <span className="truncate text-[13px] font-medium text-neutral-800 dark:text-neutral-200">
-              Commanding Officer
+              {user?.id_number || "User"}
             </span>
-            <span className="truncate text-[11px] text-neutral-400 dark:text-neutral-500">
-              CO Admin
+            <span className="truncate text-[11px] text-neutral-400 dark:text-neutral-500 capitalize">
+              {user?.role || "Guest"}
             </span>
           </div>
+        )}
+
+        {!isCollapsed && (
+          <button
+            onClick={handleLogout}
+            aria-label="Logout"
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-md",
+              "text-neutral-400 hover:text-red-600",
+              "hover:bg-red-50 dark:hover:bg-red-900/20",
+              "dark:text-neutral-500 dark:hover:text-red-400",
+              "transition-colors duration-150"
+            )}
+          >
+            <LogOut size={15} />
+          </button>
         )}
       </div>
     </aside>
