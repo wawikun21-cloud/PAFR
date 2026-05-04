@@ -1,193 +1,299 @@
-import { useState } from "react";
-import { MapPin, Search, X, RotateCcw } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { HierarchyProvider, useHierarchy } from "@/components/hierarchy/HierarchyContext";
-import AreaAccordion from "@/components/hierarchy/AreaAccordion";
-import SelectedSquadronPanel from "@/components/hierarchy/SelectedSquadronPanel";
-import { hierarchyData } from "@/data/hierarchyData";
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { getCities, deleteCity, getGroups } from '@/services/hierarchyService';
+import CityForm from '@/components/hierarchy/CityForm';
+import { cn } from '@/lib/utils';
 
-/**
- * HierarchySummaryBar
- * Shows totals across all areas.
- */
-function HierarchySummaryBar({ data }) {
-  const totalReservists = data.reduce((a, area) => a + area.reservists, 0);
-  const totalArcens     = data.reduce((a, area) => a + area.arcens.length, 0);
-  const totalGroups     = data.reduce((a, area) =>
-    a + area.arcens.reduce((b, arc) => b + arc.groups.length, 0), 0);
-  const totalSquadrons  = data.reduce((a, area) =>
-    a + area.arcens.reduce((b, arc) =>
-      b + arc.groups.reduce((c, g) => c + g.squadrons.length, 0), 0), 0);
+export default function Areas() {
+  const { isAdmin } = useAuth();
+  const [cities, setCities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [totalCount, setTotalCount] = useState(0);
+  
+  // Filters
+  const [search, setSearch] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState('');
+  
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  
+  // Modal
+  const [showForm, setShowForm] = useState(false);
+  const [editingCity, setEditingCity] = useState(null);
+  
+  // Groups for filter
+  const [groups, setGroups] = useState([]);
 
-  const stats = [
-    { label: "Areas",      value: data.length    },
-    { label: "ARCENs",     value: totalArcens    },
-    { label: "Groups",     value: totalGroups    },
-    { label: "Squadrons",  value: totalSquadrons },
-    { label: "Reservists", value: totalReservists.toLocaleString() },
-  ];
+  const fetchCities = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const params = {
+        page,
+        limit,
+        search: search || undefined,
+        group_id: selectedGroup || undefined
+      };
+      
+      const data = await getCities(params);
+      
+      if (data.status === 'success') {
+        setCities(data.data?.cities || []);
+        setTotalCount(data.data?.pagination?.total || 0);
+      } else {
+        setError(data.message || 'Failed to fetch cities');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit, search, selectedGroup]);
+
+  const fetchGroups = async () => {
+    try {
+      const data = await getGroups({ limit: 100 });
+      if (data.status === 'success') {
+        setGroups(data.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch groups:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCities();
+  }, [fetchCities]);
+
+  useEffect(() => {
+    fetchGroups();
+  }, []);
+
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this city?')) return;
+    
+    try {
+      const data = await deleteCity(id);
+      if (data.status === 'success') {
+        fetchCities();
+      } else {
+        alert(data.message || 'Failed to delete city');
+      }
+    } catch {
+      alert('Network error. Please try again.');
+    }
+  };
+
+  const handleFormSubmit = () => {
+    setShowForm(false);
+    setEditingCity(null);
+    fetchCities();
+  };
+
+  const totalPages = Math.ceil(totalCount / limit);
 
   return (
-    <div className="flex flex-wrap gap-3">
-      {stats.map((s) => (
-        <div key={s.label} className={cn(
-          "flex flex-col rounded-xl border px-4 py-2.5 min-w-[80px]",
-          "bg-white dark:bg-neutral-900",
-          "border-neutral-200 dark:border-neutral-800"
-        )}>
-          <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-50 leading-none">
-            {s.value}
-          </span>
-          <span className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-600 font-medium">
-            {s.label}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/**
- * Inner content — needs to be inside HierarchyProvider to use useHierarchy.
- */
-function AreasContent() {
-  const [search, setSearch] = useState("");
-  const { resetAll, selectedSquadron } = useHierarchy();
-
-  // Filter areas by search
-  const filtered = search.trim()
-    ? hierarchyData.filter((area) =>
-        area.name.toLowerCase().includes(search.toLowerCase()) ||
-        area.code.toLowerCase().includes(search.toLowerCase()) ||
-        area.arcens.some((arc) =>
-          arc.name.toLowerCase().includes(search.toLowerCase()) ||
-          arc.groups.some((g) =>
-            g.name.toLowerCase().includes(search.toLowerCase()) ||
-            g.squadrons.some((s) =>
-              s.name.toLowerCase().includes(search.toLowerCase())
-            )
-          )
-        )
-      )
-    : hierarchyData;
-
-  return (
-    <div className="flex flex-col gap-6 pb-10">
-      {/* ── Page header ───────────────────────────────────── */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
-            <MapPin size={15} strokeWidth={2} />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
-            Areas
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+            Areas & Cities
           </h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            Manage cities and their assignments
+          </p>
         </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-500">
-          Hierarchical drill-down: Area → ARCEN → Group → Squadron
-        </p>
-      </div>
-
-      {/* ── Summary stats ─────────────────────────────────── */}
-      <HierarchySummaryBar data={hierarchyData} />
-
-      {/* ── Search + reset ────────────────────────────────── */}
-      <div className="flex items-center gap-3">
-        {/* Search */}
-        <div className="relative max-w-xs flex-1">
-          <Search
-            size={13}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-600 pointer-events-none"
-          />
-          <input
-            type="text"
-            placeholder="Search area, group, squadron…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={cn(
-              "w-full rounded-lg border py-2 pl-8 pr-8 text-sm",
-              "border-neutral-200 dark:border-neutral-700",
-              "bg-white dark:bg-neutral-900",
-              "text-neutral-800 dark:text-neutral-200",
-              "placeholder:text-neutral-400 dark:placeholder:text-neutral-600",
-              "outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400",
-              "transition-all duration-150"
-            )}
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
-
-        {/* Reset all expanded */}
-        <button
-          onClick={resetAll}
-          className={cn(
-            "flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium",
-            "border-neutral-200 dark:border-neutral-700",
-            "bg-white dark:bg-neutral-900",
-            "text-neutral-500 dark:text-neutral-400",
-            "hover:text-neutral-800 dark:hover:text-neutral-200",
-            "hover:border-neutral-300 dark:hover:border-neutral-600",
-            "transition-all duration-150"
-          )}
-        >
-          <RotateCcw size={12} />
-          Collapse All
-        </button>
-      </div>
-
-      {/* ── Hierarchy Legend ──────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-neutral-200 dark:border-neutral-800 px-4 py-2.5 text-[11px] text-neutral-500 dark:text-neutral-600">
-        <span className="font-semibold text-neutral-400 dark:text-neutral-600 uppercase tracking-wider text-[10px]">Hierarchy:</span>
-        {[
-          { level: "1", label: "Area",     color: "bg-indigo-500" },
-          { level: "2", label: "ARCEN",    color: "bg-indigo-400" },
-          { level: "3", label: "Group",    color: "bg-blue-400"   },
-          { level: "4", label: "Squadron", color: "bg-blue-300"   },
-        ].map((l, i) => (
-          <span key={l.level} className="flex items-center gap-1.5">
-            {i > 0 && <span className="text-neutral-300 dark:text-neutral-700">›</span>}
-            <span className={cn("h-2 w-2 rounded-full", l.color)} />
-            <span>L{l.level}: {l.label}</span>
-          </span>
-        ))}
-      </div>
-
-      {/* ── Area accordion list ───────────────────────────── */}
-      {filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-neutral-200 dark:border-neutral-800 py-12 text-center">
-          <p className="text-sm text-neutral-400">No areas match your search.</p>
-          <button onClick={() => setSearch("")} className="mt-2 text-xs text-indigo-500 hover:underline">
-            Clear search
+        
+        {isAdmin && (
+          <button
+            onClick={() => {
+              setEditingCity(null);
+              setShowForm(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={16} />
+            Add City
           </button>
+        )}
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-4 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Search cities..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+            />
+          </div>
+          
+          <select
+            value={selectedGroup}
+            onChange={(e) => setSelectedGroup(e.target.value)}
+            className="px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+          >
+            <option value="">All Groups</option>
+            {(Array.isArray(groups) ? groups : []).map(g => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
         </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {filtered.map((area) => (
-            <AreaAccordion key={area.id} area={area} />
-          ))}
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-800">
+          {error}
         </div>
       )}
 
-      {/* ── Selected squadron floating panel ─────────────── */}
-      {selectedSquadron && <SelectedSquadronPanel />}
-    </div>
-  );
-}
+      {/* Loading */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+        </div>
+      ) : (
+        <>
+          {/* Table */}
+          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
+                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      City Name
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Province
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Group
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Postal Code
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                  {cities.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-4 py-12 text-center text-neutral-500 dark:text-neutral-400">
+                        No cities found
+                      </td>
+                    </tr>
+                  ) : (
+                    cities.map((city) => (
+                      <tr key={city.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          {city.name}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300">
+                          {city.province || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300">
+                          {city.group_name || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300">
+                          {city.postal_code || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={cn(
+                            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                            city.is_active
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                              : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                          )}>
+                            {city.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingCity(city);
+                                setShowForm(true);
+                              }}
+                              className="p-1.5 text-neutral-500 hover:text-blue-600 dark:text-neutral-400 dark:hover:text-blue-400 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDelete(city.id)}
+                                className="p-1.5 text-neutral-500 hover:text-red-600 dark:text-neutral-400 dark:hover:text-red-400 transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-/**
- * Areas page — wraps content in HierarchyProvider for centralized state.
- */
-export default function Areas() {
-  return (
-    <HierarchyProvider>
-      <AreasContent />
-    </HierarchyProvider>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, totalCount)} of {totalCount} cities
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="px-3 py-1.5 text-sm">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-3 py-1.5 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Form Modal */}
+      {showForm && (
+        <CityForm
+          city={editingCity}
+          onClose={() => {
+            setShowForm(false);
+            setEditingCity(null);
+          }}
+          onSubmit={handleFormSubmit}
+        />
+      )}
+    </div>
   );
 }
