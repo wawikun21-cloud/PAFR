@@ -1,4 +1,4 @@
-import { Filter, ChevronDown, RefreshCw } from "lucide-react";
+import { Filter, ChevronDown, RefreshCw, ListFilter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { filterOptions } from "@/data/dashboardData";
 
@@ -53,6 +53,7 @@ export default function DashboardFilters({ filters, onChange }) {
       group:     filterOptions.groups[0],
       area:      filterOptions.areas[0],
       status:    filterOptions.statuses[0],
+      reservistStatus: filterOptions.reservistStatuses[0],
     });
 
   return (
@@ -91,6 +92,30 @@ export default function DashboardFilters({ filters, onChange }) {
         options={filterOptions.statuses}
         onChange={patch("status")}
       />
+
+      {/* Training Status Toggle */}
+      <div className="flex flex-col gap-1 self-end">
+        <div className="h-[14px]" /> {/* spacer for label row */}
+        <button
+          onClick={() => {
+            const hasTrainingStatus = filters.reservistStatus && filters.reservistStatus !== "All Reservist Status";
+            onChange({ ...filters, reservistStatus: hasTrainingStatus ? "All Reservist Status" : "BCMT" });
+          }}
+          className={cn(
+            "flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium",
+            "border-neutral-200 dark:border-neutral-700",
+            "text-neutral-500 dark:text-neutral-400",
+            "hover:text-neutral-800 dark:hover:text-neutral-200",
+            "hover:bg-neutral-50 dark:hover:bg-neutral-800",
+            "hover:border-neutral-300 dark:hover:border-neutral-600",
+            "transition-all duration-150",
+            filters.reservistStatus && filters.reservistStatus !== "All Reservist Status" && "bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300"
+          )}
+        >
+          <ListFilter size={11} />
+          Training Status
+        </button>
+      </div>
 
       {/* Reset */}
       <div className="flex flex-col gap-1 self-end">

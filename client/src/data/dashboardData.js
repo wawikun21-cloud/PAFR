@@ -158,4 +158,5 @@ export const filterOptions = {
   groups: ["All Groups", "TCG10", "Butuan Airbase", "Surigao Airbase", "Tandag Detachment", "Bayugan Detachment"],
   areas:  ["All Areas", "Butuan", "Surigao", "Tandag", "Bayugan", "Cabadbaran"],
   statuses: ["All Status", "Active", "Standby", "Inactive"],
+  reservistStatuses: ["All Reservist Status", "BCMT", "ADT", "VADT", "ROTC", "Others"],
 };

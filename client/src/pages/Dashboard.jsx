@@ -15,6 +15,7 @@ const DEFAULT_FILTERS = {
   group: "All Groups",
   area: "All Areas",
   status: "All Status",
+  reservistStatus: "All Reservist Status",
 };
 
 export default function Dashboard() {
@@ -70,7 +71,7 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6 pb-10">
       <DashboardFilters filters={filters} onChange={setFilters} />
 
-      <KPIStatsGrid data={dashboardData?.kpis} />
+      <KPIStatsGrid data={dashboardData?.kpis} filters={filters} />
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <ForceDistributionChart data={dashboardData?.force_distribution} />

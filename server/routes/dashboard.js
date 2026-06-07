@@ -49,6 +49,20 @@ router.get('/', authenticateToken, async (req, res) => {
       WHERE 1=1 ${scopeReservistCondition}
     `, scopeParams);
 
+    // ── Training status breakdown ─────────────────────────────────────
+    const [[trainingStatusCounts]] = await db.query(`
+      SELECT
+        SUM(CASE WHEN status_bcmt = TRUE THEN 1 ELSE 0 END) AS bcmt,
+        SUM(CASE WHEN status_adt = TRUE THEN 1 ELSE 0 END) AS adt,
+        SUM(CASE WHEN status_vadt = TRUE THEN 1 ELSE 0 END) AS vadt,
+        SUM(CASE WHEN status_rotc = TRUE THEN 1 ELSE 0 END) AS rotc,
+        SUM(CASE WHEN status_others IS NOT NULL AND status_others != '' THEN 1 ELSE 0 END) AS others
+      FROM reservists r
+      LEFT JOIN reservist_assignments ra ON r.id = ra.reservist_id AND ra.is_primary = TRUE
+      LEFT JOIN \`groups\` g ON ra.group_id = g.id
+      WHERE 1=1 ${scopeReservistCondition}
+    `, scopeParams);
+
     const [[trainingCount]] = await db.query(`
       SELECT
         COUNT(*) AS total,
@@ -271,6 +285,13 @@ router.get('/', authenticateToken, async (req, res) => {
           upcoming_trainings: trainingCount.upcoming || 0,
           overall_attendance_rate: attendanceStats?.attendance_rate || 0,
           below_threshold_count: overallReadiness?.below_threshold_count || 0,
+          training_status_counts: {
+            bcmt: trainingStatusCounts?.bcmt || 0,
+            adt: trainingStatusCounts?.adt || 0,
+            vadt: trainingStatusCounts?.vadt || 0,
+            rotc: trainingStatusCounts?.rotc || 0,
+            others: trainingStatusCounts?.others || 0,
+          },
         },
         readiness: {
           by_arsen: arsenReadiness,

@@ -1,6 +1,7 @@
 import {
   Users, UserCheck, ShieldCheck, GraduationCap,
-  ClipboardCheck, AlertTriangle, TrendingUp, TrendingDown
+  ClipboardCheck, AlertTriangle, TrendingUp, TrendingDown,
+  BookOpen, Calendar, Clock, MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,22 @@ const colorMap = {
   amber:   { bg: "bg-amber-50 dark:bg-amber-500/10",   icon: "text-amber-600 dark:text-amber-400",   border: "border-amber-100 dark:border-amber-500/20" },
   orange:  { bg: "bg-orange-50 dark:bg-orange-500/10", icon: "text-orange-600 dark:text-orange-400", border: "border-orange-100 dark:border-orange-500/20" },
   red:     { bg: "bg-red-50 dark:bg-red-500/10",      icon: "text-red-600 dark:text-red-400",      border: "border-red-100 dark:border-red-500/20" },
+};
+
+const trainingStatusIconMap = {
+  BCMT: BookOpen,
+  ADT: Calendar,
+  VADT: Clock,
+  ROTC: GraduationCap,
+  Others: MoreHorizontal,
+};
+
+const trainingStatusColorMap = {
+  BCMT: { bg: "bg-blue-50 dark:bg-blue-500/10", icon: "text-blue-600 dark:text-blue-400", border: "border-blue-100 dark:border-blue-500/20" },
+  ADT: { bg: "bg-emerald-50 dark:bg-emerald-500/10", icon: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-100 dark:border-emerald-500/20" },
+  VADT: { bg: "bg-indigo-50 dark:bg-indigo-500/10", icon: "text-indigo-600 dark:text-indigo-400", border: "border-indigo-100 dark:border-indigo-500/20" },
+  ROTC: { bg: "bg-amber-50 dark:bg-amber-500/10", icon: "text-amber-600 dark:text-amber-400", border: "border-amber-100 dark:border-amber-500/20" },
+  Others: { bg: "bg-orange-50 dark:bg-orange-500/10", icon: "text-orange-600 dark:text-orange-400", border: "border-orange-100 dark:border-orange-500/20" },
 };
 
 function KPICard({ item }) {
@@ -86,6 +103,45 @@ function KPICard({ item }) {
   );
 }
 
+function TrainingStatusCard({ status, count }) {
+  const Icon = trainingStatusIconMap[status];
+  const c = trainingStatusColorMap[status];
+
+  return (
+    <div className={cn(
+      "relative flex flex-col gap-3 rounded-xl p-4",
+      "border border-neutral-200 dark:border-neutral-800",
+      "bg-white dark:bg-neutral-900",
+      "hover:border-neutral-300 dark:hover:border-neutral-700",
+      "hover:shadow-sm dark:hover:shadow-none",
+      "transition-all duration-200",
+      "group"
+    )}>
+      <div className="flex items-start justify-between">
+        <span className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-lg",
+          c.bg, c.border, "border"
+        )}>
+          <Icon size={17} className={c.icon} strokeWidth={1.8} />
+        </span>
+      </div>
+
+      <div>
+        <p className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50 leading-none">
+          {count.toLocaleString()}
+        </p>
+        <p className="mt-1 text-[11px] font-medium text-neutral-500 dark:text-neutral-500 leading-snug">
+          {status === "BCMT" && "Basic Citizen Military Training"}
+          {status === "ADT" && "Active Duty Training"}
+          {status === "VADT" && "Voluntary Active Duty Training"}
+          {status === "ROTC" && "Reserve Officers' Training Corps"}
+          {status === "Others" && "Other Training Status"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function buildKPIData(kpis) {
   if (!kpis) return [];
   return [
@@ -146,7 +202,31 @@ function buildKPIData(kpis) {
   ];
 }
 
-export default function KPIStatsGrid({ data }) {
+export default function KPIStatsGrid({ data, filters }) {
+  const isTrainingStatusSelected = filters?.reservistStatus && filters.reservistStatus !== "All Reservist Status";
+
+  if (isTrainingStatusSelected) {
+    const statusCounts = data?.training_status_counts || { bcmt: 0, adt: 0, vadt: 0, rotc: 0, others: 0 };
+
+    return (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+        {[
+          { id: "bcmt", status: "BCMT" },
+          { id: "adt", status: "ADT" },
+          { id: "vadt", status: "VADT" },
+          { id: "rotc", status: "ROTC" },
+          { id: "others", status: "Others" },
+        ].map(({ id, status }) => (
+          <TrainingStatusCard
+            key={id}
+            status={status}
+            count={statusCounts[id] || 0}
+          />
+        ))}
+      </div>
+    );
+  }
+
   const kpiData = buildKPIData(data);
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">

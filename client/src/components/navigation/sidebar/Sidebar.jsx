@@ -86,10 +86,10 @@ export default function Sidebar({ collapsed, mobileOpen, onMobileClose }) {
 {!collapsed && (
             <div className="flex flex-col leading-tight overflow-hidden">
               <span className="text-[15px] font-black tracking-[0.12em] text-[var(--text-on-sidebar)] leading-none">
-                P.A.F.R
+                A R I E S - 8
               </span>
-              <span className="mt-[3px] text-[9px] font-medium tracking-[0.06em] uppercase text-[color-mix(in_srgb,var(--text-on-sidebar)_70%,transparent)] truncate leading-none">
-                Philippine Air Force Reservists
+              <span className="mt-[3px] text-[5px] font-medium tracking-[0.06em] uppercase text-[color-mix(in_srgb,var(--text-on-sidebar)_70%,transparent)] truncate leading-none">
+                Air Force Reservist Information, Engagement, and Support System
               </span>
             </div>
           )}
