@@ -263,15 +263,15 @@ INSERT INTO supplies (id, name, category, description, unit, quantity_available,
 -- ============================================================
 -- 13. SUPPLY ISSUANCES
 -- ============================================================
-INSERT INTO supply_issuances (id, reservist_id, supply_id, quantity_issued, issued_date, due_return_date, returned_date, returned_quantity, condition_on_issue, condition_on_return, issued_by, received_by, notes, created_at) VALUES
-  (1, 2, 5, 2, '2026-05-01', '2026-06-01', NULL, NULL, 'new', NULL, 1, NULL, 'Issued for training', '2026-05-01 08:00:00'),
-  (2, 3, 6, 1, '2026-05-01', '2026-07-01', NULL, NULL, 'new', NULL, 1, NULL, 'Boot replacement', '2026-05-01 08:05:00'),
-  (3, 2, 10, 1, '2026-05-15', '2026-06-15', NULL, NULL, 'new', NULL, 1, NULL, 'Pre-deployment kit', '2026-05-15 09:00:00'),
-  (4, 5, 12, 5, '2026-06-01', '2026-06-30', '2026-06-15', 5, 'good', 'good', 1, NULL, 'Rations consumed during FTX', '2026-06-01 10:00:00'),
-  (5, 6, 7, 1, '2026-05-10', '2026-08-10', NULL, NULL, 'new', NULL, 1, NULL, 'Helmet for range training', '2026-05-10 08:00:00'),
-  (6, 2, 3, 50, '2026-05-20', '2026-07-20', NULL, NULL, 'new', NULL, 1, NULL, 'Pistol magazines for qualification', '2026-05-20 09:00:00'),
-  (7, 8, 5, 2, '2026-04-15', '2026-05-15', '2026-05-10', 2, 'good', 'fair', 1, NULL, 'Returned with minor wear', '2026-04-15 08:00:00'),
-  (8, 9, 11, 1, '2026-04-20', '2026-07-20', NULL, NULL, 'good', NULL, 1, NULL, 'E-tool issued', '2026-04-20 10:00:00');
+INSERT INTO supply_issuances (id, reservist_id, supply_id, quantity_issued, issued_date, due_return_date, issuance_type, returned_date, returned_quantity, condition_on_issue, condition_on_return, issued_by, received_by, notes, created_at) VALUES
+  (1, 2, 5, 2, '2026-05-01', '2026-06-01', 'issued', NULL, NULL, 'new', NULL, 1, NULL, 'Issued for training', '2026-05-01 08:00:00'),
+  (2, 3, 6, 1, '2026-05-01', '2026-07-01', 'issued', NULL, NULL, 'new', NULL, 1, NULL, 'Boot replacement', '2026-05-01 08:05:00'),
+  (3, 2, 10, 1, '2026-05-15', '2026-06-15', 'issued', NULL, NULL, 'new', NULL, 1, NULL, 'Pre-deployment kit', '2026-05-15 09:00:00'),
+  (4, 5, 12, 5, '2026-06-01', '2026-06-30', 'issued', '2026-06-15', 5, 'good', 'good', 1, NULL, 'Rations consumed during FTX', '2026-06-01 10:00:00'),
+  (5, 6, 7, 1, '2026-05-10', '2026-08-10', 'issued', NULL, NULL, 'new', NULL, 1, NULL, 'Helmet for range training', '2026-05-10 08:00:00'),
+  (6, 2, 3, 50, '2026-05-20', '2026-07-20', 'issued', NULL, NULL, 'new', NULL, 1, NULL, 'Pistol magazines for qualification', '2026-05-20 09:00:00'),
+  (7, 8, 5, 2, '2026-04-15', '2026-05-15', 'issued', '2026-05-10', 2, 'good', 'fair', 1, NULL, 'Returned with minor wear', '2026-04-15 08:00:00'),
+  (8, 9, 11, 1, '2026-04-20', '2026-07-20', 'issued', NULL, NULL, 'good', NULL, 1, NULL, 'E-tool issued', '2026-04-20 10:00:00');
 
 -- ============================================================
 -- 14. ALERTS

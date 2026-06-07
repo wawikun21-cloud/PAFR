@@ -109,7 +109,7 @@ const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: AdminProtectedWrapper(Dashboard), handle: { title: "Dashboard" } },
-      { path: "landing", element: ProtectedWrapper(Landing), handle: { title: "Landing" } },
+      { path: "landing", element: ProtectedWrapper(Landing), handle: { title: "Landing Page" } },
       { path: "profile", element: ProtectedWrapper(Profile), handle: { title: "Profile" } },
       { path: "announcements", element: AdminProtectedWrapper(Announcements), handle: { title: "Announcements" } },
       { path: "reservists", element: ReservistAdminProtectedWrapper(Reservists), handle: { title: "Reservists" } },

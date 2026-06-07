@@ -36,7 +36,7 @@ async function isRegisteredForExternalTraining(externalTrainingId, reservistId) 
        (reservist_id = ? OR
         JSON_UNQUOTE(JSON_EXTRACT(participant_data, '$.reservist_id')) = ?)
      LIMIT 1`,
-    [externalTrainingId, reservistId, reservistId]
+    [externalTrainingId, reservistId, String(reservistId)]
   );
   return rows[0] || null;
 }
@@ -56,16 +56,30 @@ async function getInternalTrainingParticipantIds(trainingId) {
 }
 
 async function getExternalTrainingRegistrations(externalTrainingId) {
+  // Query registration records - participant data is stored in JSON field
+  // Note: training_registrations table does NOT have reservist_id column
+  // All participant info comes from participant_data JSON
   const [rows] = await pool.query(
-    `SELECT tr.id AS registration_id, tr.participant_data, tr.registered_at,
-            r.id AS reservist_id, r.first_name, r.last_name, r.rank, r.service_number, r.qr_code
+    `SELECT tr.id AS registration_id, tr.participant_data, tr.registered_at
      FROM training_registrations tr
-     LEFT JOIN reservists r ON r.id = tr.reservist_id
      WHERE tr.training_id = ?
      ORDER BY tr.registered_at ASC`,
     [externalTrainingId]
   );
-  return rows;
+
+  // Extract participant info from JSON field
+  return rows.map(r => {
+    const pData = r.participant_data || {};
+    return {
+      registration_id: r.registration_id,
+      reservist_id: pData.reservist_id || null,
+      first_name: pData.first_name || null,
+      last_name: pData.last_name || null,
+      rank: pData.rank || null,
+      service_number: pData.service_number || null,
+      qr_code: pData.qr_code || null
+    };
+  });
 }
 
 async function upsertInternalAttendance(trainingId, reservistId, status, scanMethod, facilitatorId, conn) {
@@ -102,11 +116,18 @@ async function upsertInternalAttendance(trainingId, reservistId, status, scanMet
 
 async function upsertExternalAttendance(externalTrainingId, registrationId, reservistId, participantName, status, scanMethod, facilitatorId, conn) {
   const executor = conn || pool;
-  const [existing] = await executor.query(
-    `SELECT id, status FROM external_training_attendance
-     WHERE external_training_id = ? AND (reservist_id = ? OR registration_id = ?)`,
-    [externalTrainingId, reservistId, registrationId]
-  );
+  
+  // Handle null reservistId in WHERE clause - use IS NULL check
+  let existingQuery, existingParams;
+  if (reservistId) {
+    existingQuery = 'SELECT id, status FROM external_training_attendance WHERE external_training_id = ? AND (reservist_id = ? OR registration_id = ?)';
+    existingParams = [externalTrainingId, reservistId, registrationId];
+  } else {
+    existingQuery = 'SELECT id, status FROM external_training_attendance WHERE external_training_id = ? AND registration_id = ?';
+    existingParams = [externalTrainingId, registrationId];
+  }
+  
+  const [existing] = await executor.query(existingQuery, existingParams);
 
   const checkInTime = ['present', 'late'].includes(status) ? new Date() : null;
 

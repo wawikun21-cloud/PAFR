@@ -173,10 +173,20 @@ async function manualCheckInExternal(externalTrainingId, id, status, facilitator
 
   // id can be either reservist_id or registration_id
   let registration = null;
+  let participantName = null;
 
   // First try to find registration by the provided ID (could be reservist_id)
   if (id) {
     registration = await attendanceModel.isRegisteredForExternalTraining(externalTrainingId, id);
+    if (registration) {
+      // Get full registration data for participant_name
+      const fullReg = await attendanceModel.getRegistrationById(registration.id);
+      if (fullReg) {
+        participantName = fullReg.participant_data?.first_name 
+          ? `${fullReg.participant_data.last_name}, ${fullReg.participant_data.first_name}`
+          : fullReg.participant_data?.name || null;
+      }
+    }
   }
 
   // If not found, try looking up by registration ID directly
@@ -184,13 +194,17 @@ async function manualCheckInExternal(externalTrainingId, id, status, facilitator
     const reg = await attendanceModel.getRegistrationById(id);
     if (reg && reg.training_id == externalTrainingId) {
       registration = reg;
+      // Extract participant name from JSON
+      participantName = reg.participant_data?.first_name 
+        ? `${reg.participant_data.last_name}, ${reg.participant_data.first_name}`
+        : reg.participant_data?.name || null;
     }
   }
 
   if (!registration) throw createError('Reservist is not registered for this external training', 403);
 
   const result = await attendanceModel.upsertExternalAttendance(
-    externalTrainingId, registration.id, registration.reservist_id, null, status, 'manual', facilitatorId
+    externalTrainingId, registration.id, registration.reservist_id || null, participantName, status, 'manual', facilitatorId
   );
 
   return {
