@@ -45,6 +45,7 @@ export default function Dashboard() {
         setDashboardData(data);
       }
     } catch (err) {
+      console.error('Dashboard error:', err.response?.data || err.message);
       setError(err.response?.data?.message || 'Failed to load dashboard data');
     } finally {
       setLoading(false);

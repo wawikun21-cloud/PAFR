@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { ClipboardCheck, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 function ChartCard({ children, className }) {
   return (
     <div className={cn(
@@ -26,8 +28,8 @@ export default function AttendanceAnalytics() {
         const token = localStorage.getItem("token");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const [sqRes, topRes] = await Promise.all([
-          fetch("/api/readiness/squadrons", { headers }),
-          fetch("/api/readiness/reservists?sort_by=attendance_rate_pct&sort_order=desc&limit=5", { headers })
+          fetch(`${API_BASE}/readiness/squadrons`, { headers }),
+          fetch(`${API_BASE}/readiness/reservists?sort_by=attendance_rate_pct&sort_order=desc&limit=5`, { headers })
         ]);
         const [sqJson, topJson] = await Promise.all([sqRes.json(), topRes.json()]);
         if (sqJson.status === "success" && sqJson.data) setSquadrons(sqJson.data);

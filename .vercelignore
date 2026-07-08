@@ -1,0 +1,13 @@
+node_modules
+client/node_modules
+server/node_modules
+.git
+.env
+server/.env
+client/.env*
+client/.vercel
+.gitignore
+AGENTS.md
+.kilo
+*.md
+!README.md

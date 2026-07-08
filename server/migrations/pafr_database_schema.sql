@@ -10,9 +10,9 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `pafr` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `u591572634_pafr` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
 
-USE `pafr`;
+USE `u591572634_pafr`;
 DROP TABLE IF EXISTS `activities`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -875,7 +875,7 @@ SET @saved_cs_client     = @@character_set_client;
  1 AS `below_threshold_count`*/;
 SET character_set_client = @saved_cs_client;
 
-USE `pafr`;
+USE `u591572634_pafr`;
 /*!50001 DROP VIEW IF EXISTS `v_arsen_readiness`*/;
 /*!50001 SET @saved_cs_client          = @@character_set_client */;
 /*!50001 SET @saved_cs_results         = @@character_set_results */;
@@ -884,7 +884,6 @@ USE `pafr`;
 /*!50001 SET character_set_results     = cp850 */;
 /*!50001 SET collation_connection      = cp850_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `v_arsen_readiness` AS select `a`.`id` AS `arsen_id`,`a`.`name` AS `arsen_name`,`a`.`code` AS `arsen_code`,count(distinct `gr`.`group_id`) AS `total_groups`,sum(`gr`.`total_squadrons`) AS `total_squadrons`,sum(`gr`.`total_reservists`) AS `total_reservists`,sum(`gr`.`active_reservists`) AS `active_reservists`,round(avg(`gr`.`avg_readiness_score`),2) AS `avg_readiness_score`,round(avg(`gr`.`avg_training_participation`),2) AS `avg_training_participation`,round(avg(`gr`.`avg_attendance_rate`),2) AS `avg_attendance_rate`,round(avg(`gr`.`avg_active_status`),2) AS `avg_active_status`,sum(`gr`.`below_threshold_count`) AS `below_threshold_count` from (`arsens` `a` left join `v_group_readiness` `gr` on((`gr`.`arsen_id` = `a`.`id`))) group by `a`.`id`,`a`.`name`,`a`.`code` */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
@@ -897,7 +896,6 @@ USE `pafr`;
 /*!50001 SET character_set_results     = cp850 */;
 /*!50001 SET collation_connection      = cp850_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `v_group_readiness` AS select `g`.`id` AS `group_id`,`g`.`name` AS `group_name`,`g`.`code` AS `group_code`,`g`.`arsen_id` AS `arsen_id`,`a`.`name` AS `arsen_name`,count(distinct `sr`.`squadron_id`) AS `total_squadrons`,count(distinct `sr`.`total_reservists`) AS `total_reservists`,sum(`sr`.`active_reservists`) AS `active_reservists`,round(avg(`sr`.`avg_readiness_score`),2) AS `avg_readiness_score`,round(avg(`sr`.`avg_training_participation`),2) AS `avg_training_participation`,round(avg(`sr`.`avg_attendance_rate`),2) AS `avg_attendance_rate`,round(avg(`sr`.`avg_active_status`),2) AS `avg_active_status`,sum(`sr`.`below_threshold_count`) AS `below_threshold_count` from ((`groups` `g` join `arsens` `a` on((`g`.`arsen_id` = `a`.`id`))) left join `v_squadron_readiness` `sr` on((`sr`.`group_id` = `g`.`id`))) group by `g`.`id`,`g`.`name`,`g`.`code`,`g`.`arsen_id`,`a`.`name` */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
@@ -910,7 +908,6 @@ USE `pafr`;
 /*!50001 SET character_set_results     = cp850 */;
 /*!50001 SET collation_connection      = cp850_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `v_overall_readiness` AS select count(distinct `v_reservist_readiness`.`reservist_id`) AS `total_reservists`,count(distinct (case when (`v_reservist_readiness`.`is_active` = true) then `v_reservist_readiness`.`reservist_id` end)) AS `active_reservists`,round(avg(`v_reservist_readiness`.`readiness_score`),2) AS `avg_readiness_score`,round(avg(`v_reservist_readiness`.`training_participation_pct`),2) AS `avg_training_participation`,round(avg(`v_reservist_readiness`.`attendance_rate_pct`),2) AS `avg_attendance_rate`,round(avg(`v_reservist_readiness`.`active_status_pct`),2) AS `avg_active_status`,count(distinct (case when (`v_reservist_readiness`.`readiness_score` < 65) then `v_reservist_readiness`.`reservist_id` end)) AS `below_threshold_count`,count(distinct (case when (`v_reservist_readiness`.`readiness_score` >= 80) then `v_reservist_readiness`.`reservist_id` end)) AS `high_readiness_count`,count(distinct (case when ((`v_reservist_readiness`.`readiness_score` >= 65) and (`v_reservist_readiness`.`readiness_score` < 80)) then `v_reservist_readiness`.`reservist_id` end)) AS `medium_readiness_count`,count(distinct (case when ((`v_reservist_readiness`.`readiness_score` < 65) and (`v_reservist_readiness`.`readiness_score` > 0)) then `v_reservist_readiness`.`reservist_id` end)) AS `low_readiness_count` from `v_reservist_readiness` */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
@@ -923,7 +920,6 @@ USE `pafr`;
 /*!50001 SET character_set_results     = cp850 */;
 /*!50001 SET collation_connection      = cp850_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `v_reservist_readiness` AS select `r`.`id` AS `reservist_id`,`r`.`first_name` AS `first_name`,`r`.`last_name` AS `last_name`,`r`.`service_number` AS `service_number`,`r`.`rank` AS `rank`,`r`.`is_active` AS `is_active`,`r`.`specialization` AS `specialization`,`ra`.`group_id` AS `group_id`,`ra`.`squadron_id` AS `squadron_id`,`g`.`arsen_id` AS `arsen_id`,coalesce((select round(((100.0 * sum((case when (`a`.`status` = 'present') then 1 else 0 end))) / nullif(count(0),0)),2) from ((`internal_training_participants` `itp` join `trainings` `t` on((`itp`.`training_id` = `t`.`id`))) left join `attendance` `a` on(((`a`.`training_id` = `t`.`id`) and (`a`.`reservist_id` = `itp`.`reservist_id`)))) where ((`itp`.`reservist_id` = `r`.`id`) and (`t`.`is_mandatory` = true))),0) AS `training_participation_pct`,coalesce((select round(((100.0 * sum((case when (`a`.`status` in ('present','late')) then 1 else 0 end))) / nullif(count(0),0)),2) from `attendance` `a` where (`a`.`reservist_id` = `r`.`id`)),0) AS `attendance_rate_pct`,(case when (`r`.`is_active` = true) then 100.00 else 0.00 end) AS `active_status_pct`,round(((coalesce((select (((0.40 * 100.0) * sum((case when (`a`.`status` = 'present') then 1 else 0 end))) / nullif(count(0),0)) from ((`internal_training_participants` `itp` join `trainings` `t` on((`itp`.`training_id` = `t`.`id`))) left join `attendance` `a` on(((`a`.`training_id` = `t`.`id`) and (`a`.`reservist_id` = `itp`.`reservist_id`)))) where ((`itp`.`reservist_id` = `r`.`id`) and (`t`.`is_mandatory` = true))),0) + coalesce((select (((0.30 * 100.0) * sum((case when (`a`.`status` in ('present','late')) then 1 else 0 end))) / nullif(count(0),0)) from `attendance` `a` where (`a`.`reservist_id` = `r`.`id`)),0)) + (case when (`r`.`is_active` = true) then 30.00 else 0.00 end)),2) AS `readiness_score` from ((`reservists` `r` left join `reservist_assignments` `ra` on(((`r`.`id` = `ra`.`reservist_id`) and (`ra`.`is_primary` = true)))) left join `groups` `g` on((`ra`.`group_id` = `g`.`id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
@@ -936,12 +932,11 @@ USE `pafr`;
 /*!50001 SET character_set_results     = cp850 */;
 /*!50001 SET collation_connection      = cp850_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `v_squadron_readiness` AS select `s`.`id` AS `squadron_id`,`s`.`name` AS `squadron_name`,`s`.`code` AS `squadron_code`,`s`.`group_id` AS `group_id`,`g`.`name` AS `group_name`,`g`.`arsen_id` AS `arsen_id`,`a`.`name` AS `arsen_name`,count(distinct `vr`.`reservist_id`) AS `total_reservists`,count(distinct (case when (`vr`.`is_active` = true) then `vr`.`reservist_id` end)) AS `active_reservists`,round(avg(`vr`.`readiness_score`),2) AS `avg_readiness_score`,round(avg(`vr`.`training_participation_pct`),2) AS `avg_training_participation`,round(avg(`vr`.`attendance_rate_pct`),2) AS `avg_attendance_rate`,round(avg(`vr`.`active_status_pct`),2) AS `avg_active_status`,count(distinct (case when (`vr`.`readiness_score` < 65) then `vr`.`reservist_id` end)) AS `below_threshold_count` from (((`squadron` `s` join `groups` `g` on((`s`.`group_id` = `g`.`id`))) join `arsens` `a` on((`g`.`arsen_id` = `a`.`id`))) left join `v_reservist_readiness` `vr` on((`vr`.`squadron_id` = `s`.`id`))) group by `s`.`id`,`s`.`name`,`s`.`code`,`s`.`group_id`,`g`.`name`,`g`.`arsen_id`,`a`.`name` */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

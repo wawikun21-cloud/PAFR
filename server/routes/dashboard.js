@@ -320,7 +320,7 @@ router.get('/', authenticateToken, async (req, res) => {
     console.error('Error fetching dashboard data:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Internal server error',
+      message: error.message || 'Internal server error',
       code: 'INTERNAL_ERROR'
     });
   }

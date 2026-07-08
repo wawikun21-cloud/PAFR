@@ -35,8 +35,8 @@ async function getRelevantBroadcastAlerts(user, filters = {}) {
   const { where: scopeWhere, params: scopeParams } = getScopeWhere(user);
 
   // Exclude personal training alerts — fetched separately via getPersonalTrainingAlerts
+  // Note: alert_type column may not exist on older schemas; use LEFT JOIN check if needed
   const PERSONAL_ALERT_TYPES = ['training_assigned_internal', 'training_registered_external'];
-  const personalTypePlaceholders = PERSONAL_ALERT_TYPES.map(() => '?').join(', ');
 
   let sql = `
     SELECT 
@@ -56,10 +56,9 @@ async function getRelevantBroadcastAlerts(user, filters = {}) {
     LEFT JOIN user_alerts ua ON ua.alert_id = a.id AND ua.user_id = ?
     WHERE a.is_active = 1
       AND (a.end_date IS NULL OR a.end_date >= CURDATE())
-      AND (a.alert_type IS NULL OR a.alert_type NOT IN (${personalTypePlaceholders}))
       AND (${scopeWhere})
   `;
-  const queryParams = [user.id, ...PERSONAL_ALERT_TYPES, ...scopeParams];
+  const queryParams = [user.id, ...scopeParams];
 
   if (unread_only === 'true' || unread_only === '1') {
     sql += ` AND (ua.is_read IS NULL OR ua.is_read = 0) `;
@@ -101,24 +100,21 @@ async function getRelevantBroadcastAlerts(user, filters = {}) {
 async function getPersonalTrainingAlerts(user, filters = {}) {
   const { unread_only } = filters;
 
-  const PERSONAL_ALERT_TYPES = ['training_assigned_internal', 'training_registered_external'];
-  const placeholders = PERSONAL_ALERT_TYPES.map(() => '?').join(', ');
-
+  // Note: alert_type column may not exist on older schemas
   let sql = `
     SELECT
       a.id,
       a.title,
       a.message,
-      a.alert_type,
+      '' AS alert_type,
       a.created_at,
       ua.is_read
     FROM user_alerts ua
     INNER JOIN alerts a ON a.id = ua.alert_id
     WHERE ua.user_id = ?
       AND a.is_active = 1
-      AND a.alert_type IN (${placeholders})
   `;
-  const params = [user.id, ...PERSONAL_ALERT_TYPES];
+  const params = [user.id];
 
   if (unread_only === 'true' || unread_only === '1') {
     sql += ' AND ua.is_read = 0 ';
@@ -144,57 +140,10 @@ async function getPersonalTrainingAlerts(user, filters = {}) {
 async function syncAndGetSystemAlerts(user, filters = {}) {
   const { severity, type: alertTypeFilter, unread_only } = filters;
 
-  // Get active rules for thresholds
   const [rules] = await db.query('SELECT * FROM alert_rules WHERE is_active = 1');
   const ruleMap = Object.fromEntries(rules.map((r) => [r.type, r]));
 
-  const generated = [];
-
-  // Helper to upsert a system alert (at most one row per alert_type + entity_id ever)
-  async function ensureSystemAlert({ ruleType, title, message, severity, entityType, entityId, entityName, squadronId, groupId, arsenId }) {
-    // Build null-safe conditions for entity_id (critical: = NULL never matches, must use IS NULL)
-    const entityIsNull = entityId == null;
-    const checkWhere = entityIsNull
-      ? 'alert_type = ? AND entity_id IS NULL'
-      : 'alert_type = ? AND entity_id = ?';
-    const checkParams = entityIsNull ? [ruleType] : [ruleType, entityId];
-
-    // If any row for this key exists (ack or not), reuse it forever to prevent duplicate creation / growth on refresh
-    const [existing] = await db.query(
-      `SELECT id FROM system_alerts 
-       WHERE ${checkWhere}
-       LIMIT 1`,
-      checkParams
-    );
-
-    if (existing.length > 0) {
-      return existing[0].id;
-    }
-
-    // First time for this key: clean any prior unacked dups (if any from before), then insert the canonical one
-    const updateWhere = entityIsNull
-      ? 'alert_type = ? AND entity_id IS NULL AND is_acknowledged = 0'
-      : 'alert_type = ? AND entity_id = ? AND is_acknowledged = 0';
-    const updateParams = entityIsNull ? [ruleType] : [ruleType, entityId];
-    await db.query(
-      `UPDATE system_alerts 
-       SET is_acknowledged = 1, acknowledged_at = NOW() 
-       WHERE ${updateWhere}`,
-      updateParams
-    );
-
-    // Find rule id
-    const rule = ruleMap[ruleType];
-    const ruleId = rule ? rule.id : null;
-
-    const [ins] = await db.query(
-      `INSERT INTO system_alerts 
-       (rule_id, alert_type, severity, title, message, entity_type, entity_id, entity_name, squadron_id, group_id, arsen_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [ruleId, ruleType, severity, title, message, entityType, entityId, entityName, squadronId, groupId, arsenId]
-    );
-    return ins.insertId;
-  }
+  const toEnsure = [];
 
   // ── 1. Low Readiness Squadrons (critical) ─────────────────────────
   {
@@ -207,19 +156,14 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
       [th]
     );
     for (const r of rows) {
-      const id = await ensureSystemAlert({
+      toEnsure.push({
         ruleType: 'readiness_low',
         title: `${r.squadron_name} has low readiness score`,
         message: `${r.squadron_name} has low readiness score (${r.avg_readiness_score}%) — recommended additional training and support`,
         severity: 'critical',
-        entityType: 'squadron',
-        entityId: r.squadron_id,
-        entityName: r.squadron_name,
-        squadronId: r.squadron_id,
-        groupId: r.group_id,
-        arsenId: r.arsen_id,
+        entityType: 'squadron', entityId: r.squadron_id, entityName: r.squadron_name,
+        squadronId: r.squadron_id, groupId: r.group_id, arsenId: r.arsen_id,
       });
-      generated.push({ dbId: id, type: 'readiness_low', severity: 'critical', squadron_id: r.squadron_id });
     }
   }
 
@@ -236,19 +180,14 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
        GROUP BY vs.squadron_id`
     );
     for (const r of rows) {
-      const id = await ensureSystemAlert({
+      toEnsure.push({
         ruleType: 'readiness_low',
         title: `${r.n} reservists in ${r.squadron_name} have critical readiness`,
         message: `${r.n} reservists in ${r.squadron_name} have readiness below 60% (critical threshold)`,
         severity: 'critical',
-        entityType: 'squadron',
-        entityId: r.squadron_id,
-        entityName: r.squadron_name,
-        squadronId: r.squadron_id,
-        groupId: r.group_id,
-        arsenId: r.arsen_id,
+        entityType: 'squadron', entityId: r.squadron_id, entityName: r.squadron_name,
+        squadronId: r.squadron_id, groupId: r.group_id, arsenId: r.arsen_id,
       });
-      generated.push({ dbId: id, type: 'readiness_low', severity: 'critical', squadron_id: r.squadron_id });
     }
   }
 
@@ -269,23 +208,18 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
       [lookback]
     );
     for (const r of rows) {
-      const id = await ensureSystemAlert({
+      toEnsure.push({
         ruleType: 'no_assessment',
         title: `${r.squadron_name} has no recent readiness assessment`,
         message: `${r.squadron_name} has no readiness assessment recorded in the last ${lookback} days`,
         severity: 'warning',
-        entityType: 'squadron',
-        entityId: r.squadron_id,
-        entityName: r.squadron_name,
-        squadronId: r.squadron_id,
-        groupId: r.group_id,
-        arsenId: r.arsen_id,
+        entityType: 'squadron', entityId: r.squadron_id, entityName: r.squadron_name,
+        squadronId: r.squadron_id, groupId: r.group_id, arsenId: r.arsen_id,
       });
-      generated.push({ dbId: id, type: 'no_assessment', severity: 'warning', squadron_id: r.squadron_id });
     }
   }
 
-  // ── 4. No training attendance in last 90 days (aggregate per squadron) ─
+  // ── 4. No training attendance in last 90 days ─────────────────────
   {
     const lookback = 90;
     const [rows] = await db.query(
@@ -303,26 +237,21 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
          AND NOT EXISTS (
            SELECT 1 FROM internal_training_participants itp 
            JOIN trainings t ON itp.training_id = t.id 
-            WHERE itp.reservist_id = r.id AND t.start_datetime >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+           WHERE itp.reservist_id = r.id AND t.start_datetime >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
          )
        GROUP BY vs.squadron_id`,
       [lookback, lookback]
     );
     for (const r of rows) {
       if (r.n > 0) {
-        const id = await ensureSystemAlert({
+        toEnsure.push({
           ruleType: 'no_training',
           title: `${r.n} reservists in ${r.squadron_name} have not attended training recently`,
           message: `${r.n} reservists in ${r.squadron_name} have not attended any training in the last ${lookback} days`,
           severity: 'warning',
-          entityType: 'squadron',
-          entityId: r.squadron_id,
-          entityName: r.squadron_name,
-          squadronId: r.squadron_id,
-          groupId: r.group_id,
-          arsenId: r.arsen_id,
+          entityType: 'squadron', entityId: r.squadron_id, entityName: r.squadron_name,
+          squadronId: r.squadron_id, groupId: r.group_id, arsenId: r.arsen_id,
         });
-        generated.push({ dbId: id, type: 'no_training', severity: 'warning', squadron_id: r.squadron_id });
       }
     }
   }
@@ -338,19 +267,14 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
       [th]
     );
     for (const r of rows) {
-      const id = await ensureSystemAlert({
+      toEnsure.push({
         ruleType: 'low_attendance',
         title: `${r.squadron_name} has low attendance rate`,
         message: `${r.squadron_name} attendance rate is ${r.avg_attendance_rate}% (below ${th}% threshold)`,
         severity: 'warning',
-        entityType: 'squadron',
-        entityId: r.squadron_id,
-        entityName: r.squadron_name,
-        squadronId: r.squadron_id,
-        groupId: r.group_id,
-        arsenId: r.arsen_id,
+        entityType: 'squadron', entityId: r.squadron_id, entityName: r.squadron_name,
+        squadronId: r.squadron_id, groupId: r.group_id, arsenId: r.arsen_id,
       });
-      generated.push({ dbId: id, type: 'low_attendance', severity: 'warning', squadron_id: r.squadron_id });
     }
   }
 
@@ -362,20 +286,17 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
        WHERE quantity_available <= COALESCE(reorder_level, 10)`
     );
     for (const r of rows) {
-      const id = await ensureSystemAlert({
+      toEnsure.push({
         ruleType: 'supply_low',
         title: `${r.name} stock below reorder level`,
         message: `${r.name} stock is ${r.quantity_available} (reorder at ${r.reorder_level})`,
         severity: 'warning',
-        entityType: 'supply',
-        entityId: r.id,
-        entityName: r.name,
+        entityType: 'supply', entityId: r.id, entityName: r.name,
       });
-      generated.push({ dbId: id, type: 'supply_low', severity: 'warning' });
     }
   }
 
-  // ── 7. Overdue supply returns (aggregate count) ────────────────────
+  // ── 7. Overdue supply returns ──────────────────────────────────────
   {
     const [rows] = await db.query(
       `SELECT COUNT(*) AS n FROM supply_issuances 
@@ -383,20 +304,17 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
     );
     const n = rows[0]?.n || 0;
     if (n > 0) {
-      const id = await ensureSystemAlert({
+      toEnsure.push({
         ruleType: 'supply_overdue',
         title: `${n} supply issuances are past due return date`,
         message: `${n} supply issuances are overdue for return`,
         severity: 'critical',
-        entityType: 'issuance',
-        entityId: 0,
-        entityName: 'Supplies',
+        entityType: 'issuance', entityId: 0, entityName: 'Supplies',
       });
-      generated.push({ dbId: id, type: 'supply_overdue', severity: 'critical' });
     }
   }
 
-  // ── 8. Standby Reserve overdue reclassification (count) ────────────
+  // ── 8. Standby Reserve count ───────────────────────────────────────
   {
     const [rows] = await db.query(
       `SELECT COUNT(*) AS n FROM reservists 
@@ -404,16 +322,13 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
     );
     const n = rows[0]?.n || 0;
     if (n > 0) {
-      const id = await ensureSystemAlert({
-        ruleType: 'profile_incomplete', // reuse or could add new type
+      toEnsure.push({
+        ruleType: 'profile_incomplete',
         title: `${n} reservists have "Standby Reserve" status`,
         message: `${n} reservists have "Standby Reserve" status but are overdue for reclassification review`,
         severity: 'warning',
-        entityType: 'reservist',
-        entityId: 0,
-        entityName: 'Standby Reserve',
+        entityType: 'reservist', entityId: 0, entityName: 'Standby Reserve',
       });
-      generated.push({ dbId: id, type: 'profile_incomplete', severity: 'warning' });
     }
   }
 
@@ -429,16 +344,13 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
     );
     const n = rows[0]?.n || 0;
     if (n > 0) {
-      const id = await ensureSystemAlert({
+      toEnsure.push({
         ruleType: 'profile_incomplete',
         title: `${n} reservists have incomplete profile data`,
         message: `${n} reservists have incomplete profile data (missing required fields)`,
         severity: 'warning',
-        entityType: 'reservist',
-        entityId: 0,
-        entityName: 'Profiles',
+        entityType: 'reservist', entityId: 0, entityName: 'Profiles',
       });
-      generated.push({ dbId: id, type: 'profile_incomplete', severity: 'warning' });
     }
   }
 
@@ -456,21 +368,17 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
     );
     const n = rows[0]?.n || 0;
     if (n > 0) {
-      const id = await ensureSystemAlert({
+      toEnsure.push({
         ruleType: 'profile_incomplete',
         title: `${n} reservists have medical status unfit or limited`,
         message: `${n} reservists have medical status marked "unfit" or "limited"`,
         severity: 'warning',
-        entityType: 'reservist',
-        entityId: 0,
-        entityName: 'Medical',
+        entityType: 'reservist', entityId: 0, entityName: 'Medical',
       });
-      generated.push({ dbId: id, type: 'profile_incomplete', severity: 'warning' });
     }
   }
 
   // ── 11. Upcoming training (48h) ──────────────────────────────────
-  // Note: participant confirmation status not yet implemented in schema
   {
     const [rows] = await db.query(
        `SELECT t.id, t.title, t.start_datetime,
@@ -482,19 +390,68 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
     );
     for (const r of rows) {
       if (r.participant_count > 0) {
-        const id = await ensureSystemAlert({
+        toEnsure.push({
           ruleType: 'training_upcoming',
           title: `Upcoming training "${r.title}" has registered participants`,
           message: `Training "${r.title}" starts soon with ${r.participant_count} participants`,
           severity: 'info',
-          entityType: 'training',
-          entityId: r.id,
-          entityName: r.title,
+          entityType: 'training', entityId: r.id, entityName: r.title,
         });
-        generated.push({ dbId: id, type: 'training_upcoming', severity: 'info' });
       }
     }
   }
+
+  // ── Ensure all alerts in parallel ──────────────────────────────────
+  async function ensureSystemAlert({ ruleType, title, message, severity, entityType, entityId, entityName, squadronId, groupId, arsenId }) {
+    const entityIsNull = entityId == null;
+    const checkWhere = entityIsNull
+      ? 'alert_type = ? AND entity_id IS NULL'
+      : 'alert_type = ? AND entity_id = ?';
+    const checkParams = entityIsNull ? [ruleType] : [ruleType, entityId];
+
+    const [existing] = await db.query(
+      `SELECT id FROM system_alerts 
+       WHERE ${checkWhere}
+       LIMIT 1`,
+      checkParams
+    );
+
+    if (existing.length > 0) {
+      return existing[0].id;
+    }
+
+    const updateWhere = entityIsNull
+      ? 'alert_type = ? AND entity_id IS NULL AND is_acknowledged = 0'
+      : 'alert_type = ? AND entity_id = ? AND is_acknowledged = 0';
+    const updateParams = entityIsNull ? [ruleType] : [ruleType, entityId];
+    await db.query(
+      `UPDATE system_alerts 
+       SET is_acknowledged = 1, acknowledged_at = NOW() 
+       WHERE ${updateWhere}`,
+      updateParams
+    );
+
+    const rule = ruleMap[ruleType];
+    const ruleId = rule ? rule.id : null;
+
+    const [ins] = await db.query(
+      `INSERT INTO system_alerts 
+       (rule_id, alert_type, severity, title, message, entity_type, entity_id, entity_name, squadron_id, group_id, arsen_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [ruleId, ruleType, severity, title, message, entityType, entityId, entityName, squadronId, groupId, arsenId]
+    );
+    return ins.insertId;
+  }
+
+  // Run with limited concurrency to avoid exhausting the connection pool
+  const results = [];
+  const batchSize = 3;
+  for (let i = 0; i < toEnsure.length; i += batchSize) {
+    const batch = toEnsure.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(args => ensureSystemAlert(args)));
+    results.push(...batchResults);
+  }
+  const generated = results.map((id, i) => ({ dbId: id, ...toEnsure[i] }));
 
   // Now fetch the actual rows from system_alerts (respect scope + filters)
   let scopeFilter = '1=1';

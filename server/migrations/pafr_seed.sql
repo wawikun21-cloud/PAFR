@@ -2,7 +2,7 @@
 -- Run AFTER pafr_database_schema.sql
 -- Character Set: utf8mb4
 
-USE pafr;
+USE u591572634_pafr;
 
 -- ============================================================
 -- 1. AREAS (hierarchical geographic areas)

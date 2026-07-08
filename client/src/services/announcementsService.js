@@ -1,9 +1,12 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 const apiRequest = async (endpoint, options = {}) => {
+  const token = localStorage.getItem('token');
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
   const response = await fetch(`${API_BASE}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...options.headers,
     },
     ...options,
@@ -25,7 +28,9 @@ export const fetchAnnouncements = async () => {
 export const fetchActiveAnnouncements = async (options = {}) => {
   const { limit = 50 } = options;
   try {
-    const response = await fetch(`${API_BASE}/announcements`);
+    const token = localStorage.getItem('token');
+    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await fetch(`${API_BASE}/announcements`, { headers: authHeaders });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.message || 'An error occurred');

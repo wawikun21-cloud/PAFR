@@ -293,10 +293,10 @@ router.get(
           SUM(r.reserve_status = 'Standby Reserve')         AS standby,
           SUM(r.reserve_status = 'Retired')                 AS retired,
           SUM(r.reserve_status = 'Ready Reserve')           AS ready,
-          SUM(IFNULL(r.status_bcmt, 0) = 1)                 AS bcmt,
-          SUM(IFNULL(r.status_adt,  0) = 1)                 AS adt,
-          SUM(IFNULL(r.status_vadt, 0) = 1)                 AS vadt,
-          SUM(IFNULL(r.status_rotc, 0) = 1)                 AS rotc
+           0 AS bcmt,
+           0 AS adt,
+           0 AS vadt,
+           0 AS rotc
         FROM reservists r
         LEFT JOIN users u ON r.user_id = u.id
         LEFT JOIN reservist_assignments ra ON r.id = ra.reservist_id AND ra.is_primary = TRUE
@@ -319,7 +319,6 @@ router.get(
           r.highest_education, r.course_degree, r.school, r.year_graduated,
           r.occupation, r.employer, r.office_address,
           r.basic_training_completed, r.basic_training_date,
-          r.status_bcmt, r.status_adt, r.status_vadt, r.status_rotc, r.status_others,
           r.emergency_contact_name, r.emergency_contact_phone, r.emergency_contact_address,
           r.is_active, r.created_at, r.updated_at,
           u.email,
@@ -491,7 +490,6 @@ router.post(
         highest_education, course_degree, school, year_graduated,
         occupation, employer, office_address,
         basic_training_completed, basic_training_date,
-        status_bcmt, status_adt, status_vadt, status_rotc, status_others,
         emergency_contact_name, emergency_contact_phone, emergency_contact_address,
         ...otherFields
       } = req.body;
@@ -611,11 +609,6 @@ router.post(
           office_address: office_address || null,
           basic_training_completed: basic_training_completed || null,
           basic_training_date: basic_training_date || null,
-          status_bcmt: status_bcmt ? 1 : 0,
-          status_adt: status_adt ? 1 : 0,
-          status_vadt: status_vadt ? 1 : 0,
-          status_rotc: status_rotc ? 1 : 0,
-          status_others: status_others || null,
           emergency_contact_name: emergency_contact_name || null,
           emergency_contact_phone: emergency_contact_phone || null,
           emergency_contact_address: emergency_contact_address || null,
@@ -749,7 +742,6 @@ router.put(
         'highest_education', 'course_degree', 'school', 'year_graduated',
         'occupation', 'employer', 'office_address',
         'basic_training_completed', 'basic_training_date',
-        'status_bcmt', 'status_adt', 'status_vadt', 'status_rotc', 'status_others',
         'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_address'
       ];
 
@@ -801,7 +793,6 @@ router.put(
           r.highest_education, r.course_degree, r.school, r.year_graduated,
           r.occupation, r.employer, r.office_address,
           r.basic_training_completed, r.basic_training_date,
-          r.status_bcmt, r.status_adt, r.status_vadt, r.status_rotc, r.status_others,
           r.emergency_contact_name, r.emergency_contact_phone, r.emergency_contact_address,
           r.is_active, r.created_at, r.updated_at,
           u.email,

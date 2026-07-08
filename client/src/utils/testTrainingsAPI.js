@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Test script to verify API endpoints for trainings
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
   },

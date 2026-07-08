@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// Use environment variable for API base URL, fallback to relative path
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance with auth header support
 const api = axios.create({
@@ -168,7 +167,7 @@ export const createUser = (data) => api.post('/settings/users', data);
 export const deleteUser = (id) => api.delete(`/settings/users/${id}`);
 
 // Alerts & Insights
-export const getAlerts = (params = {}) => api.get('/alerts', { params });
+export const getAlerts = (params = {}) => api.get('/alerts', { params, timeout: 60000 });
 export const createAlert = (data) => api.post('/alerts', data);
 export const markAlertRead = (id) => api.patch(`/alerts/${id}/read`);
 export const getAlertsInsights = () => api.get('/alerts/insights');

@@ -6,6 +6,8 @@ import {
 import { Info, Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 function ChartCard({ title, icon: Icon, children, className }) {
   return (
     <div className={cn(
@@ -40,7 +42,7 @@ export default function TrainingActivityChart() {
       try {
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await fetch('/api/trainings/stats', { headers });
+        const res = await fetch(`${API_BASE}/trainings/stats`, { headers });
         const json = await res.json();
         if (json.success) {
           setHierarchyData(json.data || []);
