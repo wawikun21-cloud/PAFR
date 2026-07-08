@@ -10,8 +10,6 @@ import {
   downloadInternalAttachment,
   downloadExternalAttachment,
 } from '@/services/trainingsService';
-import { useToast } from '@/components/ui/Toast';
-import RegistrationBuilder from './RegistrationBuilder';
 import SquadronParticipantBlocks from './SquadronParticipantBlocks';
 import SquadronSlotLimits from './SquadronSlotLimits';
 import SearchableFacilitatorDropdown from './SearchableFacilitatorDropdown';
@@ -483,15 +481,6 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
   const [activeTab, setActiveTab]       = useState('details');
   const [submitting, setSubmitting]     = useState(false);
   const [errors, setErrors]             = useState({});
-  const [registrationFields, setRegistrationFields] = useState(
-    Array.isArray(training?.registration_fields) ? training.registration_fields : []
-  );
-  const handleRegistrationChange = (fields) => {
-    setRegistrationFields(fields);
-    if (errors.registration) {
-      setErrors(prev => ({ ...prev, registration: undefined }));
-    }
-  };
 
   // BUG FIX: use str() helper so null values from DB never crash .trim() or
   // controlled-input warnings. ?? '' keeps 0 and false but converts null/undefined.
@@ -555,9 +544,6 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
     } else {
       if (!externalForm.title?.trim()) errs.title     = 'Title is required.';
       if (!externalForm.startDate)     errs.startDate = 'Start date is required.';
-      if (!registrationFields || registrationFields.length === 0) {
-        errs.registration = 'Registration form must have at least one field.';
-      }
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -597,7 +583,6 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
           description: str(externalForm.description).trim() || null,
           start_date:  externalForm.startDate,
           start_time:  externalForm.startTime || null,
-          // BUG FIX: str() guard so null venue doesn't crash .trim()
           venue:       str(externalForm.venue).trim() || null,
           status:      externalForm.status,
           instructor:  str(externalForm.instructor).trim() || null,
@@ -608,8 +593,7 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
               squadron_name: block.squadronName,
               slot_limit: Number(block.slotLimit),
             })),
-          capacity:    null,
-          registration_fields: registrationFields,
+          capacity: null,
         };
       }
 
@@ -697,40 +681,27 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
           </button>
         </div>
 
-        {/* ── Tab Bar (External only) ── */}
-        {isExternal && (
-          <div className="flex items-center px-6 border-b border-neutral-200 dark:border-neutral-800 shrink-0 gap-0.5">
-            {[
-              { id: 'details',      label: 'Details' },
-              { id: 'registration', label: 'Registration Form', count: registrationFields.length },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 -mb-px transition-all ${
-                  activeTab === tab.id
-                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                    : errors.registration && tab.id === 'registration'
-                      ? 'border-transparent text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300'
-                      : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-                }`}
-              >
-                {tab.label}
-                {tab.count > 0 && (
-                  <span className="bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-full px-1.5 py-0.5">
-                    {tab.count}
-                  </span>
-                )}
-                {tab.id === 'registration' && errors.registration && (
-                  <span className="bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-full px-1.5 py-0.5">
-                    !
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+         {/* ── Tab Bar (External only) ── */}
+         {isExternal && (
+           <div className="flex items-center px-6 border-b border-neutral-200 dark:border-neutral-800 shrink-0 gap-0.5">
+             {[
+               { id: 'details', label: 'Details' },
+             ].map(tab => (
+               <button
+                 key={tab.id}
+                 type="button"
+                 onClick={() => setActiveTab(tab.id)}
+                 className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 -mb-px transition-all ${
+                   activeTab === tab.id
+                     ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                     : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                 }`}
+               >
+                 {tab.label}
+               </button>
+             ))}
+           </div>
+         )}
 
         {/* ── Scrollable Form Body ── */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
@@ -747,33 +718,17 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
               />
             )}
 
-            {isExternal && activeTab === 'details' && (
-              <ExternalFields
-                form={externalForm}
-                onChange={handleExternalChange}
-                errors={errors}
-                trainingId={training?.id}
-                existingAttachments={training?.attachments}
-              />
-            )}
+             {isExternal && activeTab === 'details' && (
+               <ExternalFields
+                 form={externalForm}
+                 onChange={handleExternalChange}
+                 errors={errors}
+                 trainingId={training?.id}
+                 existingAttachments={training?.attachments}
+               />
+             )}
 
-            {isExternal && activeTab === 'registration' && (
-              <div className="min-h-[420px] w-full">
-                <RegistrationBuilder
-                  initialFields={registrationFields}
-                  trainingTitle={externalForm.title || 'Training Registration'}
-                  onChange={handleRegistrationChange}
-                />
-              </div>
-            )}
-
-            {errors.registration && isExternal && activeTab === 'registration' && (
-              <div className="mt-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg text-xs text-red-600 dark:text-red-400">
-                {errors.registration}
-              </div>
-            )}
-
-            {errors.submit && (
+             {errors.submit && (
               <div className="mt-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg text-xs text-red-600 dark:text-red-400">
                 {errors.submit}
               </div>

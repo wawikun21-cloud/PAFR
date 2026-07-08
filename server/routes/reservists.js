@@ -1300,6 +1300,176 @@ router.get('/export', authenticateToken, requireAdminArsenOrHigher, async (req, 
 });
 
 /**
+ * GET /api/reservists/lookup
+ * Lookup own reservist record by serial number or name (authenticated)
+ * Only returns data for the logged-in user's own reservist profile
+ */
+router.get('/lookup', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'reservist') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Only reservists can use this endpoint',
+        code: 'ACCESS_DENIED'
+      });
+    }
+
+    const { serial, name } = req.query;
+    if (!serial && !name) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'serial or name query parameter is required',
+        code: 'MISSING_PARAM'
+      });
+    }
+
+    const [reservists] = await db.query(`
+      SELECT
+        r.id, r.first_name, r.last_name, r.rank, r.service_number,
+        ra.squadron_id, s.name as squadron_name, u.email
+      FROM reservists r
+      LEFT JOIN users u ON r.user_id = u.id
+      LEFT JOIN reservist_assignments ra ON r.id = ra.reservist_id AND ra.is_primary = TRUE
+      LEFT JOIN squadron s ON ra.squadron_id = s.id
+      WHERE r.user_id = ?
+    `, [req.user.id]);
+
+    if (reservists.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Reservist profile not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    const myProfile = reservists[0];
+    let match = null;
+
+    if (serial) {
+      const serialUpper = String(serial).toUpperCase().trim();
+      if (myProfile.service_number && myProfile.service_number.toUpperCase() === serialUpper) {
+        match = myProfile;
+      }
+    } else if (name) {
+      const nameLower = String(name).toLowerCase().trim();
+      const fullName = `${myProfile.first_name || ''} ${myProfile.last_name || ''}`.toLowerCase();
+      if (fullName.includes(nameLower)) {
+        match = myProfile;
+      }
+    }
+
+    if (!match) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Reservist not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    res.json({
+      status: 'success',
+      data: {
+        id: match.id,
+        first_name: match.first_name,
+        last_name: match.last_name,
+        rank: match.rank,
+        service_number: match.service_number,
+        squadron_id: match.squadron_id,
+        squadron_name: match.squadron_name,
+        email: match.email,
+      }
+    });
+  } catch (error) {
+    console.error('Error looking up reservist:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to lookup reservist',
+      code: 'LOOKUP_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /api/reservists/public-lookup
+ * Public lookup of reservist by service number or name (for external training registration)
+ * Does not require authentication - allows any visitor to verify their identity
+ */
+router.get('/public-lookup', async (req, res) => {
+  try {
+    const { serial, name } = req.query;
+    if (!serial && !name) {
+      return res.status(400).json({
+        success: false,
+        message: 'serial or name query parameter is required',
+        code: 'MISSING_PARAM'
+      });
+    }
+
+    let query, params;
+    if (serial) {
+      query = `
+        SELECT
+          r.id, r.first_name, r.last_name, r.rank, r.service_number,
+          ra.squadron_id, s.name as squadron_name, u.email
+        FROM reservists r
+        LEFT JOIN users u ON r.user_id = u.id
+        LEFT JOIN reservist_assignments ra ON r.id = ra.reservist_id AND ra.is_primary = TRUE
+        LEFT JOIN squadron s ON ra.squadron_id = s.id
+        WHERE r.service_number = ?
+        LIMIT 1
+      `;
+      params = [String(serial).trim()];
+    } else {
+      query = `
+        SELECT
+          r.id, r.first_name, r.last_name, r.rank, r.service_number,
+          ra.squadron_id, s.name as squadron_name, u.email
+        FROM reservists r
+        LEFT JOIN users u ON r.user_id = u.id
+        LEFT JOIN reservist_assignments ra ON r.id = ra.reservist_id AND ra.is_primary = TRUE
+        LEFT JOIN squadron s ON ra.squadron_id = s.id
+        WHERE r.first_name LIKE ? OR r.last_name LIKE ? OR CONCAT(r.first_name, ' ', r.last_name) LIKE ?
+        LIMIT 10
+      `;
+      const namePattern = `%${String(name).trim()}%`;
+      params = [namePattern, namePattern, namePattern];
+    }
+
+    const [rows] = await db.query(query, params);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Reservist not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    const row = rows[0];
+    res.json({
+      success: true,
+      data: {
+        id: row.id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        rank: row.rank,
+        service_number: row.service_number,
+        squadron_id: row.squadron_id,
+        squadron_name: row.squadron_name,
+        email: row.email,
+      }
+    });
+  } catch (error) {
+    console.error('Error in public-lookup:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to lookup reservist',
+      code: 'LOOKUP_ERROR'
+    });
+  }
+});
+
+/**
  * POST /api/reservists/import
  * Bulk import reservists from CSV/JSON
  * Allowed: admin, admin_arsen

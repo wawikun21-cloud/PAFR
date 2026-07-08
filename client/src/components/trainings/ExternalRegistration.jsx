@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Users, AlertCircle, CheckCircle2, Clock, Loader, UserPlus, X, Shield } from 'lucide-react';
 
 export default function ExternalRegistration({
-  training,
-  capacity,
-  currentRegistrations = 0,
-  onRegister,
-  loading = false,
-  currentUser = null,   // pass the logged-in user object so we can inject reservist_id
-}) {
+   capacity,
+   currentRegistrations = 0,
+   onRegister,
+   loading = false,
+   currentUser = null,
+ }) {
   const [formData, setFormData] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -17,16 +16,6 @@ export default function ExternalRegistration({
   const slotsRemaining = capacity != null ? capacity - currentRegistrations : null;
   const isAtCapacity = slotsRemaining !== null && slotsRemaining <= 0;
   const isNearCapacity = slotsRemaining !== null && slotsRemaining > 0 && slotsRemaining <= 5;
-
-  useEffect(() => {
-    if (training?.registration_fields) {
-      const initial = {};
-      for (const field of training.registration_fields) {
-        initial[field.name] = field.default || '';
-      }
-      setFormData(initial);
-    }
-  }, [training?.registration_fields]);
 
   const handleFieldChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -58,7 +47,7 @@ export default function ExternalRegistration({
     }
   };
 
-  const registrationFields = training?.registration_fields || [
+  const registrationFields = [
     { name: 'full_name', label: 'Full Name', type: 'text', required: true },
     { name: 'email', label: 'Email', type: 'email', required: true },
     { name: 'phone', label: 'Phone Number', type: 'text', required: false },

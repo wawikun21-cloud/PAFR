@@ -22,7 +22,7 @@ async function findExternalMany({ page, limit, search, status }) {
   const offset = (page - 1) * limit;
   let sql = `
     SELECT id, title, description, start_date, start_time, venue, status, capacity,
-           instructor, registration_fields, squadron_limits, created_at, updated_at
+           instructor, squadron_limits, created_at, updated_at
     FROM external_trainings
     WHERE 1 = 1
   `;
@@ -45,10 +45,6 @@ async function findExternalMany({ page, limit, search, status }) {
       typeof r.squadron_limits === 'string'
         ? safeJsonParse(r.squadron_limits)
         : r.squadron_limits,
-    registration_fields:
-      typeof r.registration_fields === 'string'
-        ? safeJsonParse(r.registration_fields)
-        : r.registration_fields,
   }));
 }
 
@@ -63,7 +59,7 @@ function safeJsonParse(s) {
 async function findExternalById(id) {
   const [rows] = await pool.query(
     `SELECT id, title, description, start_date, start_time, venue, status, capacity,
-            instructor, registration_fields, squadron_limits, created_at, updated_at
+            instructor, squadron_limits, created_at, updated_at
      FROM external_trainings WHERE id = ?`,
     [id]
   );
@@ -75,26 +71,15 @@ async function findExternalById(id) {
       typeof r.squadron_limits === 'string'
         ? safeJsonParse(r.squadron_limits)
         : r.squadron_limits,
-    registration_fields:
-      typeof r.registration_fields === 'string'
-        ? safeJsonParse(r.registration_fields)
-        : r.registration_fields,
   };
 }
 
 async function insertExternal(row) {
   const executor = row.executor || pool;
-  const rf =
-    row.registration_fields == null
-      ? null
-      : typeof row.registration_fields === 'string'
-        ? row.registration_fields
-        : JSON.stringify(row.registration_fields);
-
   const [result] = await executor.query(
     `INSERT INTO external_trainings (
-      title, description, start_date, start_time, venue, status, capacity, instructor, squadron_limits, registration_fields
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      title, description, start_date, start_time, venue, status, capacity, instructor, squadron_limits
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       row.title,
       row.description ?? null,
@@ -105,7 +90,6 @@ async function insertExternal(row) {
       row.capacity ?? null,
       row.instructor ?? null,
       row.squadron_limits == null ? null : typeof row.squadron_limits === 'string' ? row.squadron_limits : JSON.stringify(row.squadron_limits),
-      rf,
     ]
   );
   return result.insertId;
@@ -134,11 +118,6 @@ async function updateExternal(id, patch) {
     fields.push('squadron_limits = ?');
     const sl = patch.squadron_limits;
     params.push(sl == null ? null : typeof sl === 'string' ? sl : JSON.stringify(sl));
-  }
-  if (Object.prototype.hasOwnProperty.call(patch, 'registration_fields')) {
-    fields.push('registration_fields = ?');
-    const rf = patch.registration_fields;
-    params.push(rf == null ? null : typeof rf === 'string' ? rf : JSON.stringify(rf));
   }
   if (!fields.length) return 0;
   params.push(id);

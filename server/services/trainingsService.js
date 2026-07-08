@@ -503,7 +503,6 @@ async function createExternalTraining(body) {
     capacity: body.capacity != null ? Number(body.capacity) : null,
     instructor: body.instructor ? String(body.instructor).slice(0, 200) : null,
     squadron_limits: body.squadron_limits ?? null,
-    registration_fields: body.registration_fields ?? null,
   });
   return getExternalTrainingById(newId);
 }
@@ -524,7 +523,6 @@ async function updateExternalTraining(id, body) {
   if (body.capacity !== undefined) patch.capacity = body.capacity != null ? Number(body.capacity) : null;
   if (body.instructor !== undefined) patch.instructor = body.instructor ? String(body.instructor).slice(0, 200) : null;
   if (body.squadron_limits !== undefined) patch.squadron_limits = body.squadron_limits;
-  if (body.registration_fields !== undefined) patch.registration_fields = body.registration_fields;
   if (body.status !== undefined) {
     if (!externalModel.isValidExternalStatus(body.status)) {
       const err = new Error('Invalid status');

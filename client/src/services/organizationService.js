@@ -72,3 +72,67 @@ export async function searchSquadronReservists(squadronId, search, limit = 50) {
     };
   }
 }
+
+export async function lookupReservist(serial, name) {
+  try {
+    const params = {};
+    if (serial) params.serial = serial;
+    if (name) params.name = name;
+    const response = await api.get('/reservists/lookup', { params });
+    const body = response.data;
+    if (body?.success) {
+      return {
+        success: true,
+        data: body.data,
+        message: body.message,
+      };
+    }
+    return {
+      success: false,
+      data: null,
+      message: body?.message || 'Reservist not found',
+    };
+  } catch (error) {
+    const status = error.response?.status;
+    if (status === 401) {
+      return {
+        success: false,
+        data: null,
+        message: 'You must be logged in to lookup your profile',
+      };
+    }
+    if (status === 403) {
+      return {
+        success: false,
+        data: null,
+        message: 'Only reservists can use this feature',
+      };
+    }
+    return {
+      success: false,
+      data: null,
+      message: error.response?.data?.message || 'Failed to lookup reservist',
+    };
+  }
+}
+
+export async function publicLookupReservist(serial, name) {
+  try {
+    const params = {};
+    if (serial) params.serial = serial;
+    if (name) params.name = name;
+    const response = await api.get('/reservists/public-lookup', { params });
+    const body = response.data;
+    return {
+      success: body?.success ?? false,
+      data: body?.data ?? null,
+      message: body?.message || 'Reservist not found',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      message: error.response?.data?.message || 'Failed to lookup reservist',
+    };
+  }
+}

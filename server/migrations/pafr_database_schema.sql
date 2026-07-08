@@ -234,23 +234,22 @@ DROP TABLE IF EXISTS `external_trainings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `external_trainings` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `title` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `start_date` date NOT NULL,
-  `start_time` time DEFAULT NULL,
-  `venue` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('draft','open','closed','completed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
-  `capacity` int DEFAULT NULL,
-  `instructor` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Facilitator or instructor name',
-  `squadron_limits` json DEFAULT NULL COMMENT 'Per-squadron slot limits (array of {squadron_id, slot_limit})',
-  `registration_fields` json DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_status` (`status`),
-  KEY `idx_start_date` (`start_date`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+   `id` bigint NOT NULL AUTO_INCREMENT,
+   `title` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+   `description` text COLLATE utf8mb4_unicode_ci,
+   `start_date` date NOT NULL,
+   `start_time` time DEFAULT NULL,
+   `venue` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+   `status` enum('draft','open','closed','completed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+   `capacity` int DEFAULT NULL,
+   `instructor` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Facilitator or instructor name',
+   `squadron_limits` json DEFAULT NULL COMMENT 'Per-squadron slot limits (array of {squadron_id, slot_limit})',
+   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   PRIMARY KEY (`id`),
+   KEY `idx_status` (`status`),
+   KEY `idx_start_date` (`start_date`)
+ ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `groups`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1061,7 +1060,6 @@ CREATE TABLE external_trainings (
     status ENUM('draft', 'open', 'closed', 'completed') NOT NULL DEFAULT 'draft',
     capacity INT UNSIGNED NULL,
     squadron_limits JSON NULL COMMENT 'Per-squadron slot limits (array of {squadron_id, slot_limit})',
-    registration_fields JSON NULL COMMENT 'Dynamic form field schema (array of field configs)',
     instructor VARCHAR(200) NULL COMMENT 'Facilitator or instructor name',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
