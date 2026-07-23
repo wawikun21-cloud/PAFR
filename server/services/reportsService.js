@@ -202,6 +202,46 @@ async function saveDocumentation(reportId, file) {
   }
 }
 
+async function deleteDocumentation(reportId, docId) {
+  const doc = await reportModel.findDocumentationById(reportId, docId);
+  if (!doc) {
+    const err = new Error('Documentation not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const conn = await reportModel.pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const n = await reportModel.deleteDocumentationById(conn, reportId, docId);
+    await conn.commit();
+    if (n > 0) {
+      try { fs.unlinkSync(doc.file_path); } catch { /* ignore, file may already be gone */ }
+    }
+    return n > 0;
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
+async function getDocumentationFile(reportId, docId) {
+  const doc = await reportModel.findDocumentationById(reportId, docId);
+  if (!doc) {
+    const err = new Error('Documentation not found');
+    err.statusCode = 404;
+    throw err;
+  }
+  if (!fs.existsSync(doc.file_path)) {
+    const err = new Error('File is missing from storage');
+    err.statusCode = 404;
+    throw err;
+  }
+  return doc;
+}
+
 module.exports = {
   listReports,
   getReportById,
@@ -209,4 +249,6 @@ module.exports = {
   updateReport,
   deleteReport,
   saveDocumentation,
+  deleteDocumentation,
+  getDocumentationFile,
 };

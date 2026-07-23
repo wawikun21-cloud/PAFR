@@ -33,10 +33,9 @@ async function isRegisteredForExternalTraining(externalTrainingId, reservistId) 
   const [rows] = await pool.query(
     `SELECT id FROM training_registrations
      WHERE training_id = ? AND
-       (reservist_id = ? OR
-        JSON_UNQUOTE(JSON_EXTRACT(participant_data, '$.reservist_id')) = ?)
+       JSON_UNQUOTE(JSON_EXTRACT(participant_data, '$.reservist_id')) = ?
      LIMIT 1`,
-    [externalTrainingId, reservistId, reservistId]
+    [externalTrainingId, reservistId]
   );
   return rows[0] || null;
 }
@@ -60,7 +59,8 @@ async function getExternalTrainingRegistrations(externalTrainingId) {
     `SELECT tr.id AS registration_id, tr.participant_data, tr.registered_at,
             r.id AS reservist_id, r.first_name, r.last_name, r.rank, r.service_number, r.qr_code
      FROM training_registrations tr
-     LEFT JOIN reservists r ON r.id = tr.reservist_id
+     LEFT JOIN reservists r
+       ON r.id = CAST(JSON_UNQUOTE(JSON_EXTRACT(tr.participant_data, '$.reservist_id')) AS UNSIGNED)
      WHERE tr.training_id = ?
      ORDER BY tr.registered_at ASC`,
     [externalTrainingId]
@@ -250,7 +250,7 @@ async function addFacilitator(trainingId, externalTrainingId, userId, assignedBy
 async function getFacilitators(trainingId, externalTrainingId) {
   if (trainingId) {
     const [rows] = await pool.query(
-      `SELECT tf.user_id, tf.assigned_at, r.first_name, r.last_name, r.service_number
+      `SELECT tf.user_id, tf.assigned_at, r.first_name, r.last_name, r.rank, r.service_number
        FROM training_facilitators tf
        INNER JOIN users u ON u.id = tf.user_id
        LEFT JOIN reservists r ON r.user_id = u.id
@@ -261,7 +261,7 @@ async function getFacilitators(trainingId, externalTrainingId) {
   }
   if (externalTrainingId) {
     const [rows] = await pool.query(
-      `SELECT tf.user_id, tf.assigned_at, r.first_name, r.last_name, r.service_number
+      `SELECT tf.user_id, tf.assigned_at, r.first_name, r.last_name, r.rank, r.service_number
        FROM training_facilitators tf
        INNER JOIN users u ON u.id = tf.user_id
        LEFT JOIN reservists r ON r.user_id = u.id
@@ -273,14 +273,43 @@ async function getFacilitators(trainingId, externalTrainingId) {
   return [];
 }
 
+async function removeFacilitator(trainingId, externalTrainingId, userId) {
+  if (trainingId) {
+    const [result] = await pool.query(
+      `DELETE FROM training_facilitators WHERE training_id = ? AND user_id = ?`,
+      [trainingId, userId]
+    );
+    return result.affectedRows;
+  }
+  if (externalTrainingId) {
+    const [result] = await pool.query(
+      `DELETE FROM training_facilitators WHERE external_training_id = ? AND user_id = ?`,
+      [externalTrainingId, userId]
+    );
+    return result.affectedRows;
+  }
+  return 0;
+}
+
 async function getRegistrationById(registrationId) {
   const [rows] = await pool.query(
-    `SELECT id, training_id, reservist_id, participant_data
+    `SELECT id, training_id, participant_data,
+            CAST(JSON_UNQUOTE(JSON_EXTRACT(participant_data, '$.reservist_id')) AS UNSIGNED) AS reservist_id
      FROM training_registrations
      WHERE id = ?`,
     [registrationId]
   );
   return rows[0] || null;
+}
+
+async function getAttendanceRecordEventId(eventType, id) {
+  const table = eventType === 'internal' ? 'attendance' : 'external_training_attendance';
+  const column = eventType === 'internal' ? 'training_id' : 'external_training_id';
+  const [rows] = await pool.query(
+    `SELECT ${column} AS event_id FROM ${table} WHERE id = ?`,
+    [id]
+  );
+  return rows[0]?.event_id ?? null;
 }
 
 async function updateAttendanceStatus(id, eventType, status, facilitatorId) {
@@ -441,6 +470,8 @@ module.exports = {
   getExternalTrainingStats,
   isFacilitator,
   addFacilitator,
+  removeFacilitator,
+  getAttendanceRecordEventId,
   getFacilitators,
   updateAttendanceStatus,
   getScanAuditLog,

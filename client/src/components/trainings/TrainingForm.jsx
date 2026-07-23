@@ -12,7 +12,7 @@ import {
   deleteInternalAttachment,
   deleteExternalAttachment,
 } from '@/services/trainingsService';
-import { assignFacilitator, getFacilitators } from '@/services/attendanceApiService';
+import { assignFacilitator, getFacilitators, removeFacilitator } from '@/services/attendanceApiService';
 import { useToast } from '@/components/ui/Toast';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import SquadronParticipantBlocks from './SquadronParticipantBlocks';
@@ -358,26 +358,75 @@ function LetterOrderUpload({ file, onFileChange, existingAttachments = [], train
   );
 }
 
-// ─── Existing Facilitators (read-only list) ─────────────────────────────────────
-function ExistingFacilitatorsList({ facilitators }) {
+// ─── Existing Facilitators (with remove button) ─────────────────────────────────
+function ExistingFacilitatorsList({ facilitators, onRequestRemove, removingUserId, disabled }) {
   if (!Array.isArray(facilitators) || facilitators.length === 0) return null;
   return (
     <div className="mb-1.5 flex flex-wrap gap-1.5">
       {facilitators.map((f) => (
         <span
           key={f.user_id}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20"
+          className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md text-[11px] font-medium bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20"
           title={f.service_number || ''}
         >
           {[f.rank, `${f.last_name || ''}, ${f.first_name || ''}`].filter(Boolean).join(' ')}
+          <button
+            type="button"
+            onClick={() => onRequestRemove?.(f)}
+            disabled={disabled || removingUserId === f.user_id}
+            className="p-0.5 rounded hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            title="Remove facilitator"
+            aria-label={`Remove ${f.first_name || ''} ${f.last_name || ''}`.trim()}
+          >
+            <X size={11} />
+          </button>
         </span>
       ))}
     </div>
   );
 }
 
-// ─── Internal Training Fields ──────────────────────────────────────────────────
-function InternalFields({ form, onChange, onFileChange, errors, disabled, trainingId, existingAttachments, existingFacilitators }) {
+// ─── Pending Facilitators (selected locally, assigned on Save) ──────────────────
+function PendingFacilitatorsList({ pending, onRemove, disabled }) {
+  if (!Array.isArray(pending) || pending.length === 0) return null;
+  return (
+    <div className="mb-1.5 flex flex-wrap gap-1.5">
+      {pending.map((p) => (
+        <span
+          key={p.userId}
+          className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md text-[11px] font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-dashed border-amber-300 dark:border-amber-500/30"
+          title={p.serviceNumber || ''}
+        >
+          {[p.rank, `${p.lastName || ''}, ${p.firstName || ''}`].filter(Boolean).join(' ')}
+          <span className="text-[9px] font-bold uppercase tracking-wide opacity-70">pending</span>
+          <button
+            type="button"
+            onClick={() => onRemove(p.userId)}
+            disabled={disabled}
+            className="p-0.5 rounded hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-500 hover:text-amber-800 dark:hover:text-amber-300 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            title="Remove from pending"
+            aria-label={`Remove ${p.firstName || ''} ${p.lastName || ''} from pending list`.trim()}
+          >
+            <X size={11} />
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Shared by InternalFields and ExternalFields: appends a selected reservist to
+// the form's pendingFacilitators list (skipping duplicates against both the
+// already-saved list and what's already pending), then clears the search box.
+function addPendingFacilitator(form, onChange, existingFacilitators, reservist) {
+  if (!reservist) return;
+  const alreadyExisting = (existingFacilitators || []).some((f) => f.user_id === reservist.userId);
+  const alreadyPending = (form.pendingFacilitators || []).some((p) => p.userId === reservist.userId);
+  if (alreadyExisting || alreadyPending) return;
+  onChange('pendingFacilitators', [...(form.pendingFacilitators || []), reservist]);
+  onChange('facilitatorSearch', '');
+}
+function InternalFields({ form, onChange, onFileChange, errors, disabled, trainingId, existingAttachments, existingFacilitators, onRequestRemoveFacilitator, removingFacilitatorUserId }) {
   const selectedSquadronIds = useMemo(
     () => (form.participantBlocks || [])
       .filter((b) => b.squadronId)
@@ -426,12 +475,25 @@ function InternalFields({ form, onChange, onFileChange, errors, disabled, traini
           <input type="text" value={form.location} onChange={e => onChange('location', e.target.value)}
             className={inputCls} placeholder="Training venue..." />
         </FormGroup>
-        <FormGroup label="Facilitator">
-          <ExistingFacilitatorsList facilitators={existingFacilitators} />
+        <FormGroup label="Facilitator" hint="select to add multiple" error={errors.instructor}>
+          <ExistingFacilitatorsList
+            facilitators={existingFacilitators}
+            onRequestRemove={onRequestRemoveFacilitator}
+            removingUserId={removingFacilitatorUserId}
+            disabled={disabled}
+          />
+          <PendingFacilitatorsList
+            pending={form.pendingFacilitators}
+            onRemove={(userId) => onChange(
+              'pendingFacilitators',
+              (form.pendingFacilitators || []).filter((p) => p.userId !== userId),
+            )}
+            disabled={disabled}
+          />
           <SearchableFacilitatorDropdown
-            value={form.instructor}
-            onChange={(val) => onChange('instructor', val)}
-            onSelect={(reservist) => onChange('facilitatorUserId', reservist?.userId ?? null)}
+            value={form.facilitatorSearch}
+            onChange={(val) => onChange('facilitatorSearch', val)}
+            onSelect={(reservist) => addPendingFacilitator(form, onChange, existingFacilitators, reservist)}
             squadronIds={selectedSquadronIds}
             disabled={disabled}
           />
@@ -465,7 +527,7 @@ function InternalFields({ form, onChange, onFileChange, errors, disabled, traini
 }
 
 // ─── External Training Fields ──────────────────────────────────────────────────
-function ExternalFields({ form, onChange, errors, trainingId, existingAttachments, existingFacilitators }) {
+function ExternalFields({ form, onChange, errors, disabled, trainingId, existingAttachments, existingFacilitators, onRequestRemoveFacilitator, removingFacilitatorUserId }) {
   const selectedSquadronIds = useMemo(
     () => (form.squadronSlotLimits || [])
       .filter((b) => b.squadronId)
@@ -506,14 +568,27 @@ function ExternalFields({ form, onChange, errors, trainingId, existingAttachment
             {EXTERNAL_STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </FormGroup>
-        <FormGroup label="Facilitator">
-          <ExistingFacilitatorsList facilitators={existingFacilitators} />
+        <FormGroup label="Facilitator" hint="select to add multiple" error={errors.instructor}>
+          <ExistingFacilitatorsList
+            facilitators={existingFacilitators}
+            onRequestRemove={onRequestRemoveFacilitator}
+            removingUserId={removingFacilitatorUserId}
+            disabled={disabled}
+          />
+          <PendingFacilitatorsList
+            pending={form.pendingFacilitators}
+            onRemove={(userId) => onChange(
+              'pendingFacilitators',
+              (form.pendingFacilitators || []).filter((p) => p.userId !== userId),
+            )}
+            disabled={disabled}
+          />
           <SearchableFacilitatorDropdown
-            value={form.instructor}
-            onChange={(val) => onChange('instructor', val)}
-            onSelect={(reservist) => onChange('facilitatorUserId', reservist?.userId ?? null)}
+            value={form.facilitatorSearch}
+            onChange={(val) => onChange('facilitatorSearch', val)}
+            onSelect={(reservist) => addPendingFacilitator(form, onChange, existingFacilitators, reservist)}
             squadronIds={selectedSquadronIds}
-            disabled={false}
+            disabled={disabled}
           />
         </FormGroup>
       </div>
@@ -543,14 +618,14 @@ function ExternalFields({ form, onChange, errors, trainingId, existingAttachment
 const defaultInternal = {
   title: '', description: '', startDate: '', endDate: '',
   activityType: '', status: 'published', location: '',
-  instructor: '', facilitatorUserId: null,
+  facilitatorSearch: '', pendingFacilitators: [],
   requirements: '', letterOrderFile: null,
   participantBlocks: [],
 };
 const defaultExternal = {
   title: '', description: '', startDate: '', startTime: '',
   venue: '', status: 'draft', capacity: '',
-  instructor: '', facilitatorUserId: null,
+  facilitatorSearch: '', pendingFacilitators: [],
   squadronSlotLimits: [],
   letterOrderFile: null,
 };
@@ -569,6 +644,8 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
   const [submitting, setSubmitting]     = useState(false);
   const [errors, setErrors]             = useState({});
   const [existingFacilitators, setExistingFacilitators] = useState([]);
+  const [removeFacilitatorTarget, setRemoveFacilitatorTarget] = useState(null); // facilitator pending removal confirmation
+  const [removingFacilitatorUserId, setRemovingFacilitatorUserId] = useState(null);
 
   // BUG FIX: use str() helper so null values from DB never crash .trim() or
   // controlled-input warnings. ?? '' keeps 0 and false but converts null/undefined.
@@ -582,9 +659,13 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
       activityType:    str(training.type),
       status:          training.status === 'upcoming' ? 'published' : (training.status || 'published'),
       location:        str(training.location || training.venue),
-      instructor:      str(training.instructor),
-      // ASSUMPTION: field name on the training GET response not yet confirmed — verify against actual API shape
-      facilitatorUserId: training.facilitator_user_id ?? training.facilitatorUserId ?? null,
+      // "instructor" on the training record is now auto-derived at submit
+      // time from existingFacilitators + pendingFacilitators (a single
+      // free-text field can't represent multiple assigned facilitators).
+      // facilitatorSearch is just the live text in the search box below —
+      // always starts empty, never persisted.
+      facilitatorSearch: '',
+      pendingFacilitators: [],
       requirements:    str(training.requirements),
       letterOrderFile: null,
       participantBlocks: buildParticipantBlocksFromGroups(training.participant_groups),
@@ -607,15 +688,16 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
         squadronName: limit.squadron_name || '',
         slotLimit: limit.slot_limit ?? '',
       })) : [],
-      instructor: str(training.instructor),
-      // ASSUMPTION: field name on the training GET response not yet confirmed — verify against actual API shape
-      facilitatorUserId: training.facilitator_user_id ?? training.facilitatorUserId ?? null,
+      // See note above InternalFields init — instructor is now derived, not stored.
+      facilitatorSearch: '',
+      pendingFacilitators: [],
       letterOrderFile: null,
     } : {}),
   });
 
-  // Load currently-assigned facilitators for display when editing (read-only list —
-  // backend allows multiple facilitators per training, no removal in this form).
+  // Load currently-assigned facilitators for display when editing. Backend
+  // allows multiple facilitators per training; each can be removed via the
+  // X button on its chip (see handleRequestRemoveFacilitator below).
   useEffect(() => {
     if (!training?.id) {
       setExistingFacilitators([]);
@@ -628,6 +710,46 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
       .then((res) => setExistingFacilitators(res?.data?.data || []))
       .catch(() => setExistingFacilitators([]));
   }, [training?.id, trainingType]);
+
+  const handleRequestRemoveFacilitator = (facilitator) => {
+    setRemoveFacilitatorTarget(facilitator);
+  };
+
+  const handleConfirmRemoveFacilitator = async () => {
+    if (!removeFacilitatorTarget || !training?.id) return;
+    const userId = removeFacilitatorTarget.user_id;
+    setRemovingFacilitatorUserId(userId);
+    try {
+      const payload = trainingType === TRAINING_TYPES.INTERNAL
+        ? { user_id: userId, training_id: training.id }
+        : { user_id: userId, external_training_id: training.id };
+      await removeFacilitator(payload);
+      setExistingFacilitators((prev) => prev.filter((f) => f.user_id !== userId));
+
+      // If this facilitator was also re-selected into the pending list right
+      // before removal, drop it from pending too so submit doesn't
+      // immediately re-add them.
+      if (trainingType === TRAINING_TYPES.INTERNAL) {
+        setInternalForm((prev) => ({
+          ...prev,
+          pendingFacilitators: (prev.pendingFacilitators || []).filter((p) => p.userId !== userId),
+        }));
+      } else {
+        setExternalForm((prev) => ({
+          ...prev,
+          pendingFacilitators: (prev.pendingFacilitators || []).filter((p) => p.userId !== userId),
+        }));
+      }
+      setRemoveFacilitatorTarget(null);
+    } catch (err) {
+      setErrors({
+        submit: err.response?.data?.message || 'Failed to remove facilitator. Please try again.',
+      });
+      setRemoveFacilitatorTarget(null);
+    } finally {
+      setRemovingFacilitatorUserId(null);
+    }
+  };
 
   const handleInternalChange = (key, value) => {
     setInternalForm(prev => ({ ...prev, [key]: value }));
@@ -644,13 +766,31 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
     if (trainingType === TRAINING_TYPES.INTERNAL) {
       if (!internalForm.title?.trim()) errs.title     = 'Title is required.';
       if (!internalForm.startDate)     errs.startDate = 'Start date is required.';
+      // Leftover, unselected text in the facilitator search box does NOT add
+      // anyone to pendingFacilitators — that only happens when a suggestion
+      // is actually clicked/Entered. Without this check, typing a name and
+      // submitting would silently discard it with no facilitator added.
+      if (internalForm.facilitatorSearch?.trim()) {
+        errs.instructor = 'Select a facilitator from the suggestions list, or clear the field.';
+      }
     } else {
       if (!externalForm.title?.trim()) errs.title     = 'Title is required.';
       if (!externalForm.startDate)     errs.startDate = 'Start date is required.';
+      if (externalForm.facilitatorSearch?.trim()) {
+        errs.instructor = 'Select a facilitator from the suggestions list, or clear the field.';
+      }
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
+
+  // The training record's free-text "instructor" field can't represent
+  // multiple people, so it's derived from everyone assigned (saved +
+  // about-to-be-saved) rather than typed directly.
+  const deriveInstructorText = (pendingFacilitators) => [
+    ...existingFacilitators.map((f) => [f.rank, `${f.last_name || ''}, ${f.first_name || ''}`].filter(Boolean).join(' ')),
+    ...(pendingFacilitators || []).map((p) => p.label),
+  ].filter(Boolean).join(', ') || null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -671,7 +811,7 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
           venue:          str(internalForm.location).trim() || null,
           status:         internalForm.status,
           activity_type:  internalForm.activityType || null,
-          instructor:     str(internalForm.instructor).trim() || null,
+          instructor:     deriveInstructorText(internalForm.pendingFacilitators),
           requirements:   str(internalForm.requirements).trim() || null,
           participants: (internalForm.participantBlocks || [])
             .filter((b) => b.squadronId && (b.selectedReservists?.length ?? 0) > 0)
@@ -689,7 +829,7 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
           // BUG FIX: str() guard so null venue doesn't crash .trim()
           venue:       str(externalForm.venue).trim() || null,
           status:      externalForm.status,
-          instructor:  str(externalForm.instructor).trim() || null,
+          instructor:  deriveInstructorText(externalForm.pendingFacilitators),
           squadron_limits: (externalForm.squadronSlotLimits || [])
             .filter((block) => block.squadronId && block.slotLimit)
             .map((block) => ({
@@ -747,23 +887,52 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
         }
       }
 
-      const facilitatorUserId = trainingType === TRAINING_TYPES.INTERNAL
-        ? internalForm.facilitatorUserId
-        : externalForm.facilitatorUserId;
+      const pendingFacilitators = trainingType === TRAINING_TYPES.INTERNAL
+        ? internalForm.pendingFacilitators
+        : externalForm.pendingFacilitators;
 
-      if (facilitatorUserId) {
+      if (pendingFacilitators?.length) {
         const savedId = result.data?.id ?? training?.id;
         if (savedId) {
-          const assignPayload = trainingType === TRAINING_TYPES.INTERNAL
-            ? { user_id: facilitatorUserId, training_id: savedId }
-            : { user_id: facilitatorUserId, external_training_id: savedId };
-          try {
-            await assignFacilitator(assignPayload);
-          } catch (assignErr) {
+          const assigned = [];
+          const failedNames = [];
+
+          for (const pf of pendingFacilitators) {
+            const assignPayload = trainingType === TRAINING_TYPES.INTERNAL
+              ? { user_id: pf.userId, training_id: savedId }
+              : { user_id: pf.userId, external_training_id: savedId };
+            try {
+              await assignFacilitator(assignPayload);
+              assigned.push(pf);
+            } catch (assignErr) {
+              failedNames.push(pf.label);
+            }
+          }
+
+          if (assigned.length) {
+            setExistingFacilitators((prev) => [
+              ...prev,
+              ...assigned.map((pf) => ({
+                user_id: pf.userId,
+                rank: pf.rank,
+                first_name: pf.firstName,
+                last_name: pf.lastName,
+                service_number: pf.serviceNumber,
+              })),
+            ]);
+            const clearAssigned = (prev) => ({
+              ...prev,
+              pendingFacilitators: (prev.pendingFacilitators || []).filter(
+                (p) => !assigned.some((a) => a.userId === p.userId),
+              ),
+            });
+            if (trainingType === TRAINING_TYPES.INTERNAL) setInternalForm(clearAssigned);
+            else setExternalForm(clearAssigned);
+          }
+
+          if (failedNames.length) {
             setErrors({
-              submit:
-                assignErr.response?.data?.message ||
-                'Training was saved, but assigning the facilitator failed. You can try again from edit.',
+              submit: `Training was saved, but assigning ${failedNames.join(', ')} failed. You can try again from edit.`,
             });
             return;
           }
@@ -821,6 +990,8 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
                 trainingId={training?.id}
                 existingAttachments={training?.attachments}
                 existingFacilitators={existingFacilitators}
+                onRequestRemoveFacilitator={handleRequestRemoveFacilitator}
+                removingFacilitatorUserId={removingFacilitatorUserId}
               />
             )}
 
@@ -829,9 +1000,12 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
                 form={externalForm}
                 onChange={handleExternalChange}
                 errors={errors}
+                disabled={submitting}
                 trainingId={training?.id}
                 existingAttachments={training?.attachments}
                 existingFacilitators={existingFacilitators}
+                onRequestRemoveFacilitator={handleRequestRemoveFacilitator}
+                removingFacilitatorUserId={removingFacilitatorUserId}
               />
             )}
 
@@ -854,6 +1028,22 @@ export default function TrainingForm({ training, onClose, onSubmit, initialKind 
             </button>
           </div>
         </form>
+
+        <ConfirmDialog
+          open={!!removeFacilitatorTarget}
+          title="Remove facilitator?"
+          description={
+            removeFacilitatorTarget
+              ? `${[removeFacilitatorTarget.rank, `${removeFacilitatorTarget.last_name || ''}, ${removeFacilitatorTarget.first_name || ''}`].filter(Boolean).join(' ')} will be unassigned from this training.`
+              : ''
+          }
+          confirmLabel="Remove"
+          cancelLabel="Cancel"
+          destructive
+          loading={removingFacilitatorUserId === removeFacilitatorTarget?.user_id}
+          onConfirm={handleConfirmRemoveFacilitator}
+          onCancel={() => setRemoveFacilitatorTarget(null)}
+        />
       </div>
     </div>
   );

@@ -319,6 +319,7 @@ router.get(
           r.highest_education, r.course_degree, r.school, r.year_graduated,
           r.occupation, r.employer, r.office_address,
           r.basic_training_completed, r.basic_training_date,
+          r.status_bcmt, r.status_adt, r.status_vadt, r.status_rotc, r.status_others,
           r.emergency_contact_name, r.emergency_contact_phone, r.emergency_contact_address,
           r.is_active, r.created_at, r.updated_at,
           u.email,
@@ -704,7 +705,14 @@ router.put(
     body('sex').optional({ checkFalsy: true, nullable: true }).isIn(['Male', 'Female', 'Other']),
     body('blood_type').optional({ checkFalsy: true, nullable: true }).isIn(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown']),
     body('phone_number').optional({ checkFalsy: true, nullable: true }).trim(),
-    body('reserve_status').optional({ checkFalsy: true, nullable: true }).isIn(['Ready Reserve', 'Standby Reserve', 'Retired'])
+    body('reserve_status').optional({ checkFalsy: true, nullable: true }).isIn(['Ready Reserve', 'Standby Reserve', 'Retired']),
+    body('age').optional({ checkFalsy: true, nullable: true }).isInt({ min: 0, max: 150 }),
+    body('status_bcmt').optional().isIn([0, 1, true, false]).withMessage('status_bcmt must be 0, 1, or a boolean'),
+    body('status_adt').optional().isIn([0, 1, true, false]).withMessage('status_adt must be 0, 1, or a boolean'),
+    body('status_vadt').optional().isIn([0, 1, true, false]).withMessage('status_vadt must be 0, 1, or a boolean'),
+    body('status_rotc').optional().isIn([0, 1, true, false]).withMessage('status_rotc must be 0, 1, or a boolean'),
+    body('status_others').optional({ checkFalsy: true, nullable: true }).isString().isLength({ max: 255 }),
+    body('is_active').optional().isBoolean().withMessage('is_active must be true or false')
   ],
   async (req, res) => {
     try {
@@ -744,7 +752,7 @@ router.put(
       // Prepare update fields
       const updateFields = {};
       const allowedFields = [
-        'first_name', 'last_name', 'rank', 'date_of_birth', 'sex',
+        'first_name', 'last_name', 'rank', 'date_of_birth', 'sex', 'age',
         'blood_type', 'phone_number', 'reserve_status', 'address',
         'place_of_birth', 'civil_status', 'citizenship', 'height', 'weight',
         'reserve_center', 'category', 'date_enlisted', 'source_of_commission',
@@ -752,7 +760,9 @@ router.put(
         'highest_education', 'course_degree', 'school', 'year_graduated',
         'occupation', 'employer', 'office_address',
         'basic_training_completed', 'basic_training_date',
-        'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_address'
+        'status_bcmt', 'status_adt', 'status_vadt', 'status_rotc', 'status_others',
+        'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_address',
+        'is_active'
       ];
 
       allowedFields.forEach(field => {
@@ -776,6 +786,15 @@ router.put(
       const updateQuery = `UPDATE reservists SET ${updateColumns} WHERE id = ?`;
 
       await db.query(updateQuery, values);
+
+      // Keep the linked user account's active state in sync, same as the
+      // soft-delete route does when deactivating.
+      if (Object.prototype.hasOwnProperty.call(updateFields, 'is_active') && current[0].user_id) {
+        await db.query(
+          'UPDATE users SET is_active = ? WHERE id = ?',
+          [!!updateFields.is_active, current[0].user_id]
+        );
+      }
 
       // Log audit
       logAudit({
@@ -803,6 +822,7 @@ router.put(
           r.highest_education, r.course_degree, r.school, r.year_graduated,
           r.occupation, r.employer, r.office_address,
           r.basic_training_completed, r.basic_training_date,
+          r.status_bcmt, r.status_adt, r.status_vadt, r.status_rotc, r.status_others,
           r.emergency_contact_name, r.emergency_contact_phone, r.emergency_contact_address,
           r.is_active, r.created_at, r.updated_at,
           u.email,

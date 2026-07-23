@@ -198,7 +198,7 @@ router.get('/', authenticateToken, async (req, res) => {
     `, lowPerformingParams);
 
     // ── Attendance timeline (last 8 weeks) ────────────────────────
-    const [[attendanceTimeline]] = await db.query(`
+    const [attendanceTimeline] = await db.query(`
       SELECT
         DATE_FORMAT(a.created_at, '%b %d') AS date,
         ROUND(100.0 * SUM(CASE WHEN a.status IN ('present', 'late') THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS rate

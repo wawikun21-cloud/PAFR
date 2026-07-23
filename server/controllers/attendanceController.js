@@ -146,6 +146,21 @@ function getFacilitators(req, res) {
     .catch((err) => sendError(res, err, 'Failed to load facilitators'));
 }
 
+function removeFacilitator(req, res) {
+  const removedBy = req.user?.id;
+  const trainingId = req.body.training_id ? Number(req.body.training_id) : null;
+  const externalTrainingId = req.body.external_training_id ? Number(req.body.external_training_id) : null;
+  const userId = req.body.user_id ? Number(req.body.user_id) : null;
+
+  attendanceService
+    .removeFacilitator(trainingId, externalTrainingId, userId)
+    .then((data) => {
+      logAudit('attendance.facilitator.remove', removedBy, { userId, trainingId, externalTrainingId });
+      return res.json(data);
+    })
+    .catch((err) => sendError(res, err, 'Failed to remove facilitator'));
+}
+
 function getMyEvents(req, res) {
   const userId = req.user?.id;
   const role = req.user?.role;
@@ -173,6 +188,7 @@ module.exports = {
   getScanHistory,
   assignFacilitator,
   getFacilitators,
+  removeFacilitator,
   getMyEvents,
   getEventStatus,
 };

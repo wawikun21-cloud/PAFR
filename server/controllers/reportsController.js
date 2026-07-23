@@ -82,6 +82,36 @@ function uploadDocumentation(req, res) {
     .catch((err) => sendError(res, err, 'Failed to upload documentation'));
 }
 
+function deleteDocumentation(req, res) {
+  const userId = req.user?.id;
+  const reportId = Number(req.params.id);
+  const docId = Number(req.params.docId);
+  reportsService
+    .deleteDocumentation(reportId, docId)
+    .then((ok) => {
+      if (!ok) return res.status(404).json({ success: false, message: 'Documentation not found' });
+      logAudit('report.documentation.delete', userId, { reportId, docId });
+      return res.json({ success: true, message: 'Documentation deleted successfully', data: null });
+    })
+    .catch((err) => sendError(res, err, 'Failed to delete documentation'));
+}
+
+function downloadDocumentation(req, res) {
+  const reportId = Number(req.params.id);
+  const docId = Number(req.params.docId);
+  reportsService
+    .getDocumentationFile(reportId, docId)
+    .then((doc) => {
+      res.setHeader('Content-Type', doc.mime_type || 'application/octet-stream');
+      return res.download(doc.file_path, doc.original_filename, (err) => {
+        if (err && !res.headersSent) {
+          sendError(res, err, 'Failed to download documentation');
+        }
+      });
+    })
+    .catch((err) => sendError(res, err, 'Failed to download documentation'));
+}
+
 module.exports = {
   listReports,
   getReport,
@@ -89,4 +119,6 @@ module.exports = {
   updateReport,
   deleteReport,
   uploadDocumentation,
+  deleteDocumentation,
+  downloadDocumentation,
 };

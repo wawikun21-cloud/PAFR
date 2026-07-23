@@ -131,7 +131,7 @@ export function TrainingDetailModal({ training, onClose, isAdmin, onEdit, onDele
             <div className="flex items-start gap-2.5">
               <User size={14} className="mt-0.5 shrink-0 text-neutral-400 dark:text-neutral-500" />
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Instructor</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Facilitator</p>
                 <p className="text-sm text-neutral-700 dark:text-neutral-200 leading-snug">{training.instructor || 'Not assigned'}</p>
               </div>
             </div>

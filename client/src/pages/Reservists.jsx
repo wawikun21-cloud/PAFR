@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Plus, Loader, Upload, Download } from "lucide-react";
-import { getReservists, createReservist, updateReservist, deleteReservist } from "@/services/api";
+import { getReservists, getReservist, createReservist, updateReservist, deleteReservist, assignReservist } from "@/services/api";
 import * as XLSX from "xlsx";
 import { PrimaryButton } from "@/components/airbase/AirbaseUI";
 import ReservistStatsBar    from "@/components/reservists/ReservistStatsBar";
@@ -53,6 +53,7 @@ export default function Reservists() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [detailRow, setDetailRow] = useState(null);
   const [viewRow, setViewRow] = useState(null);
+  const [reopenPanel, setReopenPanel] = useState(null); // 'detail' | 'view' | null
   const [bulkUploadModal, setBulkUploadModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -184,7 +185,7 @@ export default function Reservists() {
     setModal({ open: true, mode: "add", row: null });
   };
 
-  const openEdit = (row) => {
+  const openEdit = (row, reopenAs = null) => {
     setForm({
       ...EMPTY_FORM,
       id: row.id || '',
@@ -240,9 +241,13 @@ export default function Reservists() {
     setModal({ open: true, mode: "edit", row });
     setDetailRow(null);
     setViewRow(null);
+    setReopenPanel(reopenAs);
   };
 
-  const closeModal = () => setModal((m) => ({ ...m, open: false }));
+  const closeModal = () => {
+    setModal((m) => ({ ...m, open: false }));
+    setReopenPanel(null);
+  };
 
 const handleSubmit = async () => {
     try {
@@ -343,16 +348,36 @@ const handleSubmit = async () => {
           group_id: form.groupId || null,
           squadron_id: form.squadronId || null,
         };
-        const response = await updateReservist(modal.row.id, requestData);
+        const reservistId = modal.row.id;
+        const response = await updateReservist(reservistId, requestData);
         if (response.data.status === 'success') {
-          // Re-fetch the full list so state is always sourced from the server.
-          // Avoids stale-closure / partial-response bugs where optimistic updates
-          // show missing assignment fields (squadron, group, arcen, airbase) until refresh.
-          const updatedReservist = transformReservistData([response.data.data])[0];
+          // The core PUT /:id route only touches the reservists table — Group/
+          // Squadron assignment lives in a separate reservist_assignments table
+          // and is only ever changed via POST /:id/assign. Without this call,
+          // any Group/Squadron edit made in the form is silently dropped.
+          if (form.groupId && form.squadronId) {
+            try {
+              await assignReservist(reservistId, {
+                group_id: Number(form.groupId),
+                squadron_id: Number(form.squadronId),
+              });
+            } catch (assignErr) {
+              // 409 just means it's already assigned to that exact group/squadron —
+              // not a real failure, so don't surface it as one.
+              if (assignErr.response?.status !== 409) {
+                addToast(assignErr.response?.data?.message || 'Failed to update assignment', 'error');
+              }
+            }
+          }
+
+          // Re-fetch this single record so the response reflects both the
+          // profile update above and any assignment change just made.
+          const freshResponse = await getReservist(reservistId);
+          const updatedReservist = transformReservistData([freshResponse.data.data])[0];
           await loadReservists(currentPage);
           // Sync open panels to the freshly-loaded record.
-          if (detailRow?.id === modal.row.id) setDetailRow(updatedReservist);
-          if (viewRow?.id === modal.row.id) setViewRow(updatedReservist);
+          if (reopenPanel === 'detail') setDetailRow(updatedReservist);
+          if (reopenPanel === 'view') setViewRow(updatedReservist);
           addToast('Reservist updated successfully', 'success');
         }
       }
@@ -519,14 +544,14 @@ const handleSubmit = async () => {
             <ReservistDetailPanel
               reservist={detailRow}
               onClose={() => setDetailRow(null)}
-              onEdit={canMutate ? () => openEdit(detailRow) : null}
+              onEdit={canMutate ? () => openEdit(detailRow, 'detail') : null}
             />
           )}
 
           <ReservistViewModal
             reservist={viewRow}
             onClose={() => setViewRow(null)}
-            onEdit={canMutate ? (row) => { setViewRow(null); openEdit(row); } : null}
+            onEdit={canMutate ? (row) => { setViewRow(null); openEdit(row, 'view'); } : null}
           />
 
           <ConfirmDialog

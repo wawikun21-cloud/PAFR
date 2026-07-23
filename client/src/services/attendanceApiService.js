@@ -52,6 +52,9 @@ export const assignFacilitator = (data) =>
 export const getFacilitators = (params = {}) =>
   api.get('/attendance/facilitators', { params });
 
+export const removeFacilitator = (data) =>
+  api.delete('/attendance/facilitators', { data });
+
 // ── My events ─────────────────────────────────────────────────────────────────
 
 export const getMyEvents = () =>

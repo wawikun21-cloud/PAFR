@@ -326,6 +326,12 @@ async function getFacilitators(trainingId, externalTrainingId) {
   return attendanceModel.getFacilitators(trainingId, externalTrainingId);
 }
 
+async function removeFacilitator(trainingId, externalTrainingId, userId) {
+  const affected = await attendanceModel.removeFacilitator(trainingId, externalTrainingId, userId);
+  if (!affected) throw createError('Facilitator assignment not found', 404);
+  return { success: true, message: 'Facilitator removed' };
+}
+
 async function getExternalRegistrationCount(externalTrainingId) {
   return attendanceModel.getExternalRegistrationCount(externalTrainingId);
 }
@@ -353,6 +359,7 @@ module.exports = {
   getScanHistory,
   assignFacilitator,
   getFacilitators,
+  removeFacilitator,
   getExternalRegistrationCount,
   getMyEvents,
   getEventStatus,
