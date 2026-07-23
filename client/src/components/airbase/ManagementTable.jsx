@@ -74,7 +74,7 @@ export default function ManagementTable({
       {/* ── Toolbar ──────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Search */}
-        <div className="relative min-w-[220px] flex-1 max-w-sm">
+        <div className="relative w-full min-w-0 flex-1 sm:min-w-[220px] sm:max-w-sm">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
           <input
             type="text"
@@ -115,8 +115,8 @@ export default function ManagementTable({
         "overflow-hidden rounded-xl border",
         "border-neutral-200 dark:border-neutral-800"
       )}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto styled-scroll">
+          <table className="w-full min-w-[640px] text-sm">
             {/* Head */}
             <thead>
               <tr className={cn(

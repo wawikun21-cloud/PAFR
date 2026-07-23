@@ -35,14 +35,14 @@ export default function SelectedSquadronPanel() {
 
   return (
     <div className={cn(
-      "sticky bottom-4 mx-auto max-w-3xl",
+      "sticky bottom-3 mx-3 max-w-3xl sm:bottom-4 sm:mx-auto",
       "rounded-2xl border shadow-xl shadow-black/10 dark:shadow-black/40",
       "border-indigo-200 dark:border-indigo-500/30",
       "bg-white dark:bg-neutral-900",
       "animate-in slide-in-from-bottom-2 fade-in duration-200"
     )}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 px-5 py-3">
+      <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 px-4 py-3 sm:px-5">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white">
             <MapPin size={13} strokeWidth={2} />
@@ -63,7 +63,7 @@ export default function SelectedSquadronPanel() {
       </div>
 
       {/* Body */}
-      <div className="grid grid-cols-2 gap-4 px-5 py-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-4 sm:gap-4 sm:px-5">
         <div className="flex flex-col gap-1">
           <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">Status</span>
           <span className={cn(
@@ -104,7 +104,7 @@ export default function SelectedSquadronPanel() {
 
       {/* Breadcrumb trail */}
       {bc && (
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-neutral-100 dark:border-neutral-800 px-5 py-2.5 text-[10px] text-neutral-400 dark:text-neutral-600">
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-neutral-100 dark:border-neutral-800 px-4 py-2.5 text-[10px] text-neutral-400 dark:text-neutral-600 sm:px-5">
           <PlaneTakeoff size={9} />
           <span>PAFR Airbase</span>
           <span>›</span>

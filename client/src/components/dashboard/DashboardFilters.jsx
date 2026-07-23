@@ -9,7 +9,7 @@ import { getReservistFilterMetadata } from "@/services/api";
  */
 function FilterSelect({ label, value, options, onChange, placeholder }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 w-full sm:w-auto">
       <label className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-600 px-0.5">
         {label}
       </label>
@@ -23,7 +23,7 @@ function FilterSelect({ label, value, options, onChange, placeholder }) {
             "bg-white dark:bg-neutral-900",
             "text-neutral-700 dark:text-neutral-300",
             "outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400",
-            "transition-all duration-150 cursor-pointer min-w-[140px]"
+            "transition-all duration-150 cursor-pointer w-full sm:min-w-[130px] sm:w-auto"
           )}
         >
           <option value="">{placeholder || "All"}</option>
@@ -85,79 +85,80 @@ export default function DashboardFilters({ filters, onChange }) {
 
   return (
     <div className={cn(
-      "flex flex-wrap items-end gap-3 rounded-xl border px-4 py-3",
+      "flex flex-col gap-3 rounded-xl border px-3 py-3 sm:px-4",
       "border-neutral-200 dark:border-neutral-800",
       "bg-white dark:bg-neutral-900"
     )}>
       {/* Label */}
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 dark:text-neutral-600 self-end pb-2 mr-1">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 dark:text-neutral-600">
         <Filter size={12} />
         Filters
+        {metaLoading && <Loader size={12} className="animate-spin text-neutral-400 dark:text-neutral-500 shrink-0 ml-1" />}
       </div>
 
-      <FilterSelect
-        label="ARSEN"
-        value={filters.arsenId}
-        options={arsenOptions}
-        onChange={handleArsenChange}
-        placeholder="All ARSENs"
-      />
-      <FilterSelect
-        label="Group"
-        value={filters.groupId}
-        options={groupOptions}
-        onChange={handleGroupChange}
-        placeholder="All Groups"
-      />
-      <FilterSelect
-        label="Squadron"
-        value={filters.squadronId}
-        options={squadronOptions}
-        onChange={patch("squadronId")}
-        placeholder="All Squadrons"
-      />
-      <FilterSelect
-        label="Reserve Status"
-        value={filters.reserveStatus}
-        options={reserveStatusOptions}
-        onChange={patch("reserveStatus")}
-        placeholder="All Reserve Statuses"
-      />
-      <FilterSelect
-        label="Source"
-        value={filters.sourceOfCommission}
-        options={sourceOptions}
-        onChange={patch("sourceOfCommission")}
-        placeholder="All Sources"
-      />
-      <FilterSelect
-        label="Category"
-        value={filters.category}
-        options={categoryOptions}
-        onChange={patch("category")}
-        placeholder="All Categories"
-      />
+      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
+        <FilterSelect
+          label="ARSEN"
+          value={filters.arsenId}
+          options={arsenOptions}
+          onChange={handleArsenChange}
+          placeholder="All ARSENs"
+        />
+        <FilterSelect
+          label="Group"
+          value={filters.groupId}
+          options={groupOptions}
+          onChange={handleGroupChange}
+          placeholder="All Groups"
+        />
+        <FilterSelect
+          label="Squadron"
+          value={filters.squadronId}
+          options={squadronOptions}
+          onChange={patch("squadronId")}
+          placeholder="All Squadrons"
+        />
+        <FilterSelect
+          label="Reserve Status"
+          value={filters.reserveStatus}
+          options={reserveStatusOptions}
+          onChange={patch("reserveStatus")}
+          placeholder="All Reserve Statuses"
+        />
+        <FilterSelect
+          label="Source"
+          value={filters.sourceOfCommission}
+          options={sourceOptions}
+          onChange={patch("sourceOfCommission")}
+          placeholder="All Sources"
+        />
+        <FilterSelect
+          label="Category"
+          value={filters.category}
+          options={categoryOptions}
+          onChange={patch("category")}
+          placeholder="All Categories"
+        />
 
-      {metaLoading && <Loader size={12} className="animate-spin text-neutral-400 dark:text-neutral-500 shrink-0 self-end mb-1" />}
-
-      {/* Reset */}
-      <div className="flex flex-col gap-1 self-end">
-        <div className="h-[14px]" /> {/* spacer for label row */}
-        <button
-          onClick={handleReset}
-          className={cn(
-            "flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium",
-            "border-neutral-200 dark:border-neutral-700",
-            "text-neutral-500 dark:text-neutral-400",
-            "hover:text-neutral-800 dark:hover:text-neutral-200",
-            "hover:bg-neutral-50 dark:hover:bg-neutral-800",
-            "hover:border-neutral-300 dark:hover:border-neutral-600",
-            "transition-all duration-150"
-          )}
-        >
-          <RefreshCw size={11} />
-          Reset
-        </button>
+        {/* Reset */}
+        <div className="col-span-2 flex flex-col gap-1 sm:self-end">
+          <div className="hidden h-[14px] sm:block" /> {/* spacer for label row */}
+          <button
+            onClick={handleReset}
+            className={cn(
+              "flex w-full items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium sm:w-auto",
+              "border-neutral-200 dark:border-neutral-700",
+              "text-neutral-500 dark:text-neutral-400",
+              "hover:text-neutral-800 dark:hover:text-neutral-200",
+              "hover:bg-neutral-50 dark:hover:bg-neutral-800",
+              "hover:border-neutral-300 dark:hover:border-neutral-600",
+              "transition-all duration-150"
+            )}
+          >
+            <RefreshCw size={11} />
+            Reset
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -53,21 +53,21 @@ export function LowPerformingAreas({ data }) {
   return (
     <div className={cn(
       "rounded-xl border border-neutral-200 dark:border-neutral-800",
-      "bg-white dark:bg-neutral-900 p-5"
+      "bg-white dark:bg-neutral-900 p-4 sm:p-5"
     )}>
       <div className="flex items-center gap-2 mb-4">
-        <AlertTriangle size={14} className="text-amber-500 dark:text-amber-400" strokeWidth={1.8} />
+        <AlertTriangle size={14} className="text-amber-500 dark:text-amber-400 shrink-0" strokeWidth={1.8} />
         <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 tracking-tight">
           Low Performing Areas
         </h3>
-        <span className="ml-auto rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+        <span className="ml-auto shrink-0 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
           {items.length} flagged
         </span>
       </div>
 
       {items.length > 0 ? (
-        <>
-          <div className="mb-2 grid grid-cols-[1fr_80px_64px_72px] gap-2 px-1">
+        <div className="overflow-x-auto -mx-1 px-1">
+          <div className="mb-2 grid grid-cols-[1fr_70px_52px_64px] sm:grid-cols-[1fr_80px_64px_72px] gap-2 min-w-[340px]">
             {["Area", "Readiness", "Attend.", "Status"].map((h) => (
               <span key={h} className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-600">
                 {h}
@@ -75,12 +75,12 @@ export function LowPerformingAreas({ data }) {
             ))}
           </div>
 
-          <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
+          <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800 min-w-[340px]">
             {items.map((row, i) => (
               <div
                 key={row.name || i}
                 className={cn(
-                  "grid grid-cols-[1fr_80px_64px_72px] gap-2 items-center py-3 px-1 rounded-lg",
+                  "grid grid-cols-[1fr_70px_52px_64px] sm:grid-cols-[1fr_80px_64px_72px] gap-2 items-center py-3 px-1 rounded-lg",
                   "transition-colors duration-150",
                   (row.readiness || 0) < 60
                     ? "hover:bg-red-50/40 dark:hover:bg-red-500/5"
@@ -105,7 +105,7 @@ export function LowPerformingAreas({ data }) {
               </div>
             ))}
           </div>
-        </>
+        </div>
       ) : (
         <div className="flex h-24 items-center justify-center text-xs text-neutral-400">
           No low performing areas
@@ -188,14 +188,14 @@ export function AlertsInsights({ data }) {
   return (
     <div className={cn(
       "rounded-xl border border-neutral-200 dark:border-neutral-800",
-      "bg-white dark:bg-neutral-900 p-5"
+      "bg-white dark:bg-neutral-900 p-4 sm:p-5"
     )}>
       <div className="flex items-center gap-2 mb-4">
-        <Bell size={14} className="text-indigo-500 dark:text-indigo-400" strokeWidth={1.8} />
+        <Bell size={14} className="text-indigo-500 dark:text-indigo-400 shrink-0" strokeWidth={1.8} />
         <h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 tracking-tight">
           Alerts & Insights
         </h3>
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex items-center gap-1.5 shrink-0">
           <span className="rounded-full bg-indigo-100 dark:bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400">
             {items.length} active
           </span>

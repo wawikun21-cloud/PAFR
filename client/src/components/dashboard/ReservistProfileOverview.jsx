@@ -10,7 +10,7 @@ function ChartCard({ title, icon: Icon, children, className }) {
   return (
     <div className={cn(
       "rounded-2xl border border-neutral-200 dark:border-neutral-800",
-      "bg-white dark:bg-neutral-900 p-6",
+      "bg-white dark:bg-neutral-900 p-4 sm:p-6",
       className
     )}>
       <div className="flex items-center gap-2.5 mb-5">
@@ -146,7 +146,7 @@ function ProfessionDistribution({ data }) {
         Profession / Occupation Distribution
       </p>
 
-      <div className="flex items-start gap-5">
+      <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
         {/* Pie chart with total in center */}
         <div className="relative w-[130px] h-[130px] shrink-0 min-w-0">
           <ResponsiveContainer width="100%" height="100%">
@@ -180,7 +180,7 @@ function ProfessionDistribution({ data }) {
         </div>
 
         {/* Legends on the right side (6 items) */}
-        <div className="flex-1 pt-0.5">
+        <div className="flex-1 w-full pt-0.5">
           <div className="grid grid-cols-1 gap-y-[5px]">
             {data.map((d, i) => {
               const pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
@@ -212,7 +212,7 @@ function ProfessionDistribution({ data }) {
 export default function ReservistProfileOverview({ rankData, professionData }) {
   return (
     <ChartCard title="Reservist Profile Overview" icon={Users}>
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 sm:gap-8 xl:grid-cols-2">
         <ProfessionDistribution data={professionData} />
         <RankDistribution data={rankData} />
       </div>

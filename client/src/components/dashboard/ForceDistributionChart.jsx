@@ -5,7 +5,7 @@ function ChartCard({ title, children, className }) {
   return (
     <div className={cn(
       "rounded-2xl border border-neutral-200 dark:border-neutral-800",
-      "bg-white dark:bg-neutral-900 p-6",
+      "bg-white dark:bg-neutral-900 p-4 sm:p-6",
       className
     )}>
       <div className="flex items-center gap-2 mb-3">
@@ -50,7 +50,7 @@ export default function ForceDistributionChart({ data }) {
               <th className="text-right pb-0.5 font-semibold">Total</th>
               <th className="text-right pb-0.5 font-semibold">Active</th>
               <th className="text-right pb-0.5 font-semibold">Standby</th>
-              <th className="w-28 pb-0.5 font-semibold">Distribution</th>
+              <th className="w-20 sm:w-28 pb-0.5 font-semibold">Distribution</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800 text-s">
@@ -70,8 +70,8 @@ export default function ForceDistributionChart({ data }) {
                   <td className="py-1 text-right font-medium text-neutral-500 dark:text-neutral-400">{standby}</td>
 
                   {/* Inline per-row bar chart with extra space from table content */}
-                  <td className="py-1 pl-6">
-                    <div className="flex w-[120px] h-2.5 rounded overflow-hidden bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+                  <td className="py-1 pl-3 sm:pl-6">
+                    <div className="flex w-[80px] sm:w-[120px] h-2.5 rounded overflow-hidden bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
                       <div
                         className="h-full bg-indigo-500 transition-all duration-300"
                         style={{ width: `${activePct}%` }}

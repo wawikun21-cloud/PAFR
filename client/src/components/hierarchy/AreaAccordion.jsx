@@ -31,7 +31,7 @@ export default function AreaAccordion({ area }) {
         <div
           onClick={() => toggleArea(area.id)}
           className={cn(
-            "flex w-full items-center gap-3 px-4 py-3 cursor-pointer",
+            "flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 cursor-pointer sm:px-4 sm:py-3",
             "transition-all duration-150",
             isOpen
               ? "bg-indigo-50 dark:bg-indigo-500/10"
@@ -58,7 +58,7 @@ export default function AreaAccordion({ area }) {
           </span>
 
           {/* Area name + code */}
-          <div className="flex flex-1 items-center gap-2 min-w-0">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <span className={cn(
               "text-[14px] font-bold truncate",
               isOpen ? "text-indigo-700 dark:text-indigo-300" : "text-neutral-800 dark:text-neutral-200"
@@ -69,14 +69,14 @@ export default function AreaAccordion({ area }) {
               {area.code}
             </span>
             {area.region && (
-              <span className="shrink-0 text-[10px] text-neutral-400 dark:text-neutral-600">
+              <span className="hidden shrink-0 text-[10px] text-neutral-400 dark:text-neutral-600 sm:inline">
                 {area.region}
               </span>
             )}
           </div>
 
           {/* Stats pills */}
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="ml-8 flex shrink-0 items-center gap-2 sm:ml-0">
             <span className="flex items-center gap-1 text-[10px] text-neutral-500">
               <Users size={9} /> {totalReservists}
             </span>
@@ -130,7 +130,7 @@ function ArsenBlock({ arcen }) {
       {/* ARCEN header */}
       <div
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/60 transition-colors"
+        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/60 transition-colors"
       >
         <ChevronRight
           size={12}
@@ -144,7 +144,7 @@ function ArsenBlock({ arcen }) {
           <Layers size={12} strokeWidth={1.8} />
         </span>
 
-        <div className="flex flex-1 items-center gap-2 min-w-0">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <span className="text-[13px] font-bold text-neutral-800 dark:text-neutral-200 truncate">
             {arcen.name}
           </span>
@@ -152,13 +152,13 @@ function ArsenBlock({ arcen }) {
             {arcen.code}
           </span>
           {arcen.commander && (
-            <span className="truncate text-[10px] text-neutral-400 dark:text-neutral-600">
+            <span className="hidden truncate text-[10px] text-neutral-400 dark:text-neutral-600 sm:inline">
               {arcen.commander}
             </span>
           )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="ml-7 flex shrink-0 items-center gap-2 sm:ml-0">
           <span className="flex items-center gap-1 text-[10px] text-neutral-500">
             <Users size={9} /> {totalReservists}
           </span>
@@ -214,7 +214,7 @@ function GroupBlock({ group }) {
             : "bg-white hover:bg-neutral-50 dark:bg-neutral-900 dark:hover:bg-neutral-800/60"
         )}
       >
-        <div className="flex items-center gap-2 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2">
           <ChevronRight
             size={11}
             className={cn(
@@ -232,7 +232,7 @@ function GroupBlock({ group }) {
             <Layers size={10} strokeWidth={1.8} />
           </span>
 
-          <div className="flex flex-1 items-center gap-2 min-w-0">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <span className={cn(
               "text-[12px] font-bold truncate",
               isOpen ? "text-blue-700 dark:text-blue-300" : "text-neutral-700 dark:text-neutral-300"
@@ -243,18 +243,18 @@ function GroupBlock({ group }) {
               {group.code}
             </span>
             {group.type && (
-              <span className="shrink-0 text-[9px] text-neutral-400 dark:text-neutral-600">
+              <span className="hidden shrink-0 text-[9px] text-neutral-400 dark:text-neutral-600 sm:inline">
                 {group.type}
               </span>
             )}
             {group.commander && (
-              <span className="truncate text-[9px] text-neutral-400 dark:text-neutral-600">
+              <span className="hidden truncate text-[9px] text-neutral-400 dark:text-neutral-600 sm:inline">
                 {group.commander}
               </span>
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="ml-6 flex shrink-0 items-center gap-1.5 sm:ml-0">
             <span className="flex items-center gap-1 text-[9px] text-neutral-500">
               <Users size={8} /> {group.reservists}
             </span>

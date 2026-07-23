@@ -465,7 +465,7 @@ export default function ManageSquadrons() {
           size="lg"
           footer={
             canMutate && (
-              <div className="flex items-center justify-between w-full">
+              <div className="flex w-full flex-wrap items-center justify-between gap-2">
                 <button
                   onClick={() => openDeleteDialog(detail)}
                   className={cn(
@@ -476,7 +476,7 @@ export default function ManageSquadrons() {
                 >
                   <Trash2 size={14} /> Delete
                 </button>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => toggleStatus(detail)}
                     className={cn(

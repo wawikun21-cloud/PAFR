@@ -23,7 +23,7 @@ export default function GroupAccordion({ group }) {
       )}>
         {/* ── Header ────────────────────────────────────────────── */}
         <div className={cn(
-          "flex w-full items-center gap-3 px-3 py-2.5",
+          "flex w-full flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5",
           "transition-all duration-150",
           isOpen
             ? "bg-blue-50 dark:bg-blue-500/10"
@@ -33,7 +33,7 @@ export default function GroupAccordion({ group }) {
           <button
             onClick={() => toggleGroup(group.id)}
             aria-expanded={isOpen}
-            className="flex items-center gap-3 flex-1 min-w-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 rounded"
+            className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 rounded"
           >
             <ChevronRight
               size={13}
@@ -52,9 +52,9 @@ export default function GroupAccordion({ group }) {
               <Layers size={12} strokeWidth={1.8} />
             </span>
 
-            <div className="flex flex-1 items-center gap-2 min-w-0">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               <span className={cn(
-                "text-[13px] font-bold",
+                "text-[13px] font-bold truncate",
                 isOpen ? "text-blue-700 dark:text-blue-300" : "text-neutral-700 dark:text-neutral-300"
               )}>
                 {group.name}
@@ -62,15 +62,15 @@ export default function GroupAccordion({ group }) {
               <span className="shrink-0 rounded bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 font-mono text-[9px] text-neutral-500">
                 {group.code}
               </span>
-              <span className="shrink-0 text-[10px] text-neutral-400 dark:text-neutral-600">
+              <span className="hidden shrink-0 text-[10px] text-neutral-400 dark:text-neutral-600 sm:inline">
                 {group.type}
               </span>
             </div>
           </button>
 
           {/* Right side: stats + members button */}
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="hidden sm:flex items-center gap-2">
+          <div className="ml-8 flex shrink-0 flex-wrap items-center gap-2 sm:ml-0">
+            <div className="hidden items-center gap-2 sm:flex">
               <span className="flex items-center gap-1 text-[10px] text-neutral-500">
                 <Users size={10} /> {group.reservists}
               </span>

@@ -240,25 +240,25 @@ export default function MembersModal({ open, node, nodeType, onClose }) {
 
         {/* ── Header ──────────────────────────────────────────── */}
         <div className={cn(
-          "flex items-center justify-between shrink-0",
-          "border-b border-neutral-100 dark:border-neutral-800 px-6 py-4"
+          "flex items-center justify-between gap-3 shrink-0",
+          "border-b border-neutral-100 dark:border-neutral-800 px-4 py-4 sm:px-6"
         )}>
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             {/* Node icon */}
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40">
               <CtxIcon size={16} strokeWidth={2} />
             </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-[15px] font-bold text-neutral-900 dark:text-neutral-50 leading-none">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <h2 className="truncate text-[15px] font-bold text-neutral-900 dark:text-neutral-50 leading-none">
                   {ctx.label}
                 </h2>
-                <span className="rounded-md bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[10px] font-mono text-neutral-500">
+                <span className="shrink-0 rounded-md bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[10px] font-mono text-neutral-500">
                   {node.code}
                 </span>
               </div>
               {ctx.sub && (
-                <p className="mt-0.5 text-[11px] text-neutral-400 dark:text-neutral-600">
+                <p className="mt-0.5 truncate text-[11px] text-neutral-400 dark:text-neutral-600">
                   {ctx.sub}
                 </p>
               )}
@@ -267,7 +267,7 @@ export default function MembersModal({ open, node, nodeType, onClose }) {
 
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
             aria-label="Close"
           >
             <X size={15} />
@@ -275,7 +275,7 @@ export default function MembersModal({ open, node, nodeType, onClose }) {
         </div>
 
         {/* ── Stats row ────────────────────────────────────────── */}
-        <div className="flex items-center gap-4 shrink-0 border-b border-neutral-100 dark:border-neutral-800 px-6 py-3 bg-neutral-50 dark:bg-neutral-900/60">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 shrink-0 border-b border-neutral-100 dark:border-neutral-800 px-4 py-3 sm:px-6 bg-neutral-50 dark:bg-neutral-900/60">
           {[
             { label: "Total Members", value: members.length, color: "text-neutral-800 dark:text-neutral-200" },
             { label: "Active",        value: activeCount,    color: "text-emerald-600 dark:text-emerald-400" },
@@ -290,9 +290,9 @@ export default function MembersModal({ open, node, nodeType, onClose }) {
         </div>
 
         {/* ── Toolbar ──────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 shrink-0 px-6 py-3 border-b border-neutral-100 dark:border-neutral-800">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 px-4 py-3 sm:px-6 border-b border-neutral-100 dark:border-neutral-800">
           {/* Search */}
-          <div className="relative flex-1 max-w-xs">
+          <div className="relative w-full flex-1 sm:max-w-xs">
             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
             <input
               type="text"
@@ -316,7 +316,7 @@ export default function MembersModal({ open, node, nodeType, onClose }) {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className={cn(
-              "rounded-lg border py-2 pl-3 pr-7 text-sm cursor-pointer",
+              "shrink-0 rounded-lg border py-2 pl-3 pr-7 text-sm cursor-pointer",
               "border-neutral-200 dark:border-neutral-700",
               "bg-white dark:bg-neutral-800",
               "text-neutral-700 dark:text-neutral-300",
@@ -333,7 +333,7 @@ export default function MembersModal({ open, node, nodeType, onClose }) {
           <button
             onClick={handleExport}
             className={cn(
-              "flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium",
+              "flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium",
               "border-emerald-200 dark:border-emerald-500/30",
               "bg-emerald-50 dark:bg-emerald-500/10",
               "text-emerald-600 dark:text-emerald-400",
@@ -346,7 +346,7 @@ export default function MembersModal({ open, node, nodeType, onClose }) {
           </button>
 
           {/* Result count */}
-          <span className="ml-auto text-xs text-neutral-400 dark:text-neutral-600 shrink-0">
+          <span className="w-full text-xs text-neutral-400 dark:text-neutral-600 sm:ml-auto sm:w-auto shrink-0">
             {sorted.length} of {members.length} members
           </span>
         </div>
@@ -363,8 +363,8 @@ export default function MembersModal({ open, node, nodeType, onClose }) {
         )}
 
         {/* ── Table ────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto styled-scroll">
-          <table className="w-full text-sm">
+        <div className="flex-1 overflow-auto styled-scroll">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="sticky top-0 z-10">
               <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
                 <th className="w-8 px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-neutral-400">#</th>
@@ -483,7 +483,7 @@ export default function MembersModal({ open, node, nodeType, onClose }) {
         </div>
 
         {/* ── Footer ───────────────────────────────────────────── */}
-        <div className="flex items-center justify-between shrink-0 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 px-6 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 shrink-0 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 px-4 py-3 sm:px-6">
           <p className="text-[11px] text-neutral-400 dark:text-neutral-600">
             Showing <span className="font-semibold text-neutral-600 dark:text-neutral-400">{sorted.length}</span> of{" "}
             <span className="font-semibold text-neutral-600 dark:text-neutral-400">{members.length}</span> total members
