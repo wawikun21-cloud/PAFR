@@ -334,6 +334,8 @@ function MindanaoMapInline() {
       .filter(Boolean);
   }, [selected, getNode]);
 
+  const [rawDebug, setRawDebug] = useState(null);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -345,17 +347,34 @@ function MindanaoMapInline() {
         ]);
         const loadedSquadrons = sqRes.data?.status === "success" ? sqRes.data.data : [];
         const loadedArsenSummaries = sumRes.data?.status === "success"
-          ? sumRes.data.data.filter((a) => a.id === 2 || a.id === 3)
+          ? (sumRes.data.data || [])
           : [];
         const mindanaoArsenIds = new Set(loadedArsenSummaries.map((a) => a.id));
-        const mindanaoSquadrons = loadedSquadrons.filter((sq) => mindanaoArsenIds.has(sq.arsen?.id));
+        const mindanaoNames = new Set(loadedArsenSummaries.map((a) => a.name).filter(Boolean));
+        const mindanaoSquadrons = loadedSquadrons.filter((sq) => {
+          const arsenName = sq.arsen?.name || "";
+          const arsenLoc = sq.arsen?.location || "";
+          return /mindanao/i.test(arsenName) || /mindanao/i.test(arsenLoc) || mindanaoArsenIds.has(sq.arsen?.id);
+        });
+        const hasMindanaoData = mindanaoSquadrons.length > 0;
+        const displaySquadrons = hasMindanaoData ? mindanaoSquadrons : loadedSquadrons;
         loadInfoRef.current = {
           loadedSquadrons: loadedSquadrons.length,
+          summaryTotal: sumRes.data?.data?.length || 0,
           summaryIds: Array.from(mindanaoArsenIds),
+          summaryNames: loadedArsenSummaries.map((a) => a.name),
           mindanaoSquadrons: mindanaoSquadrons.length,
           sampleSq: loadedSquadrons[0] || null,
+          sampleSummary: loadedArsenSummaries[0] || null,
+          mindanaoNames: Array.from(mindanaoNames),
+          usedFallback: !hasMindanaoData,
         };
-        setSquadrons(mindanaoSquadrons);
+        setRawDebug({
+          allSquadrons: loadedSquadrons,
+          allSummaries: loadedArsenSummaries,
+          filteredSquadrons: mindanaoSquadrons,
+        });
+        setSquadrons(displaySquadrons);
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load map data");
       } finally {
@@ -401,7 +420,10 @@ function MindanaoMapInline() {
   if (loading) {
     return (
       <div className="flex h-[70vh] items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin text-indigo-500" />
+        <div className="text-center">
+          <Loader className="h-8 w-8 animate-spin text-indigo-500 mx-auto mb-2" />
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">Loading Mindanao map data…</p>
+        </div>
       </div>
     );
   }
@@ -409,6 +431,43 @@ function MindanaoMapInline() {
   if (error) {
     return (
       <div className="rounded-md bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-800 dark:text-red-200">{error}</div>
+    );
+  }
+
+  if (squadrons.length === 0) {
+    return (
+      <div className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-4">
+        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">No Mindanao data available</p>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+          The map returned 0 squadrons. This usually means the filter criteria don&apos;t match any arsen names/locations in the database, or the API returned no data.
+        </p>
+        <details className="text-[10px] text-neutral-600 dark:text-neutral-400 font-mono bg-white dark:bg-neutral-800 rounded border border-neutral-200 dark:border-neutral-700">
+          <summary className="px-2 py-1 cursor-pointer select-none bg-neutral-100 dark:bg-neutral-700 font-semibold">Debug: API Response Data</summary>
+          <div className="p-2 space-y-1">
+            <p>Summary total: {loadInfoRef.current?.summaryTotal ?? "—"}</p>
+            <p>Mindanao IDs found: {loadInfoRef.current?.summaryIds?.join(", ") || "none"}</p>
+            <p>Names: {loadInfoRef.current?.summaryNames?.join(", ") || "—"}</p>
+            <p>All squadrons: {loadInfoRef.current?.loadedSquadrons ?? "—"}</p>
+            <p>Mindanao squadrons: {loadInfoRef.current?.mindanaoSquadrons ?? "—"}</p>
+            {loadInfoRef.current?.usedFallback && <p className="text-amber-600 dark:text-amber-400">Used fallback filter: {loadInfoRef.current?.fallbackIds?.join(", ")}</p>}
+            {rawDebug?.allSummaries?.length > 0 ? (
+              <>
+                <p className="mt-2 font-semibold text-neutral-700 dark:text-neutral-300">All ARSEN Summaries (server):</p>
+                {rawDebug.allSummaries.map((a) => (
+                  <p key={a.id}>{a.id}: {a.name} | loc: {a.location} | sq: {a.total_squadrons}</p>
+                ))}
+              </>
+            ) : <p className="text-red-500 dark:text-red-400">No summaries returned</p>}
+            {rawDebug?.allSquadrons?.length > 0 && (
+              <>
+                <p className="mt-2 font-semibold text-neutral-700 dark:text-neutral-300">Sample Squadron (first):</p>
+                <pre className="whitespace-pre-wrap break-all">{JSON.stringify(rawDebug.allSquadrons[0], null, 2)}</pre>
+              </>
+            )}
+            {rawDebug?.allSquadrons?.length === 0 && <p className="text-red-500 dark:text-red-400">No squadrons returned from API</p>}
+          </div>
+        </details>
+      </div>
     );
   }
 
