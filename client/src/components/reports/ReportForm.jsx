@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Upload, Trash2, FileText, Image, File, ClipboardList, Users } from 'lucide-react';
+import { X, Upload, Trash2, FileText, Image, File, ClipboardList, Users, Eye, Download } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import { createReport, updateReport, uploadDocumentation } from '@/services/reportsService';
+import { createReport, updateReport, uploadDocumentation, deleteDocumentation, downloadDocumentation } from '@/services/reportsService';
 import { getTrainings, getExternalTrainings, getInternalTrainingParticipants, getExternalTrainingParticipants } from '@/services/trainingsService';
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog';
 import { cn } from '@/lib/utils';
 
 const inputCls =
@@ -13,6 +14,104 @@ const ACCEPTED_MIME = ['application/pdf', 'image/jpeg', 'image/png'];
 const MAX_FILE_MB = 10;
 
 const str = (v) => (v == null ? '' : String(v));
+
+const getDocName = (doc, idx) => doc?.name || doc?.file_name || doc?.filename || `File ${idx + 1}`;
+
+// Opens a blank tab synchronously (so browsers don't block it as a popup),
+// then points it at the file once the authenticated download resolves.
+async function viewDocument(reportId, doc, addToast) {
+  const newTab = window.open('', '_blank');
+  const result = await downloadDocumentation(reportId, doc.id);
+  if (!result.success || !result.blob) {
+    newTab?.close();
+    addToast?.(result.message || 'Failed to open file', 'error');
+    return;
+  }
+  const blobUrl = URL.createObjectURL(result.blob);
+  if (newTab) newTab.location = blobUrl;
+}
+
+async function downloadDocumentFile(reportId, doc, idx, addToast) {
+  const result = await downloadDocumentation(reportId, doc.id);
+  if (!result.success || !result.blob) {
+    addToast?.(result.message || 'Failed to download file', 'error');
+    return;
+  }
+  const blobUrl = URL.createObjectURL(result.blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = getDocName(doc, idx);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(blobUrl);
+}
+
+const docIcon = (doc, idx) => {
+  const hint = `${getDocName(doc, idx)} ${doc?.type || ''}`.toLowerCase();
+  if (hint.includes('pdf')) return <FileText size={16} className="text-red-500" />;
+  if (hint.match(/\.(jpg|jpeg|png|gif|webp)$/) || hint.includes('image')) {
+    return <Image size={16} className="text-indigo-500" />;
+  }
+  return <File size={16} className="text-blue-500" />;
+};
+
+function ExistingDocumentation({ reportId, docs, removedIds, onRemove, addToast }) {
+  const visible = docs.filter((d) => !removedIds.includes(d.id));
+  if (visible.length === 0) return null;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+          Uploaded Documentation
+        </label>
+        <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+          {visible.length} file{visible.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="space-y-2">
+        {visible.map((doc, idx) => (
+          <div
+            key={doc.id ?? idx}
+            className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg"
+          >
+            <div className="w-8 h-8 rounded-lg bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 flex items-center justify-center shrink-0">
+              {docIcon(doc, idx)}
+            </div>
+            <p className="flex-1 min-w-0 text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">
+              {getDocName(doc, idx)}
+            </p>
+            <button
+              type="button"
+              onClick={() => viewDocument(reportId, doc, addToast)}
+              title="View"
+              className="p-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+            >
+              <Eye size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadDocumentFile(reportId, doc, idx, addToast)}
+              title="Download"
+              className="p-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+            >
+              <Download size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onRemove(doc)}
+              title="Remove"
+              className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-500/10 text-neutral-400 hover:text-red-500 transition-colors"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function FormGroup({ label, required, hint, children, error }) {
   return (
@@ -164,6 +263,12 @@ export default function ReportForm({ report, onClose, onSubmit }) {
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const eventDropdownRef = useRef(null);
 
+  const [existingDocs] = useState(
+    () => report?.documentations || report?.documents || report?.attachments || []
+  );
+  const [removedDocIds, setRemovedDocIds] = useState([]);
+  const [docPendingRemoval, setDocPendingRemoval] = useState(null);
+
   const [form, setForm] = useState({
     title: str(report?.title || ''),
     event_type: report?.event_type || 'internal',
@@ -297,6 +402,16 @@ export default function ReportForm({ report, onClose, onSubmit }) {
       }
 
       const reportId = result.data?.id ?? report?.id;
+
+      if (removedDocIds.length > 0 && reportId) {
+        for (const docId of removedDocIds) {
+          try {
+            await deleteDocumentation(reportId, docId);
+          } catch {
+            addToast('Failed to remove one of the existing files', 'warning');
+          }
+        }
+      }
 
       if (form.documentationFiles.length > 0 && reportId) {
         for (const file of form.documentationFiles) {
@@ -507,7 +622,14 @@ export default function ReportForm({ report, onClose, onSubmit }) {
               </FormGroup>
             </div>
 
-            <div className="pt-1 border-t border-neutral-100 dark:border-neutral-800">
+            <div className="pt-1 border-t border-neutral-100 dark:border-neutral-800 space-y-4">
+              <ExistingDocumentation
+                reportId={report?.id}
+                docs={existingDocs}
+                removedIds={removedDocIds}
+                onRemove={(doc) => setDocPendingRemoval(doc)}
+                addToast={addToast}
+              />
               <DocumentationUpload
                 files={form.documentationFiles}
                 onFilesChange={(files) => handleChange('documentationFiles', files)}
@@ -531,6 +653,23 @@ export default function ReportForm({ report, onClose, onSubmit }) {
           </div>
         </form>
       </div>
+
+      <ConfirmationDialog
+        isOpen={!!docPendingRemoval}
+        onClose={() => setDocPendingRemoval(null)}
+        onConfirm={() => {
+          setRemovedDocIds((prev) => [...prev, docPendingRemoval.id]);
+        }}
+        title="Remove file?"
+        message={
+          docPendingRemoval
+            ? `"${docPendingRemoval.name || docPendingRemoval.file_name || docPendingRemoval.filename || 'This file'}" will be removed from this report once you save. This can't be undone.`
+            : ''
+        }
+        confirmText="Remove file"
+        cancelText="Keep file"
+        variant="destructive"
+      />
     </div>
   );
 }

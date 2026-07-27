@@ -171,6 +171,24 @@ async function findDocumentationsByReportId(reportId) {
   return rows;
 }
 
+async function findDocumentationById(reportId, docId) {
+  const [rows] = await pool.query(
+    `SELECT id, report_id, original_filename, file_path, file_size, mime_type, uploaded_at
+     FROM report_documentations
+     WHERE id = ? AND report_id = ?`,
+    [docId, reportId]
+  );
+  return rows[0] || null;
+}
+
+async function deleteDocumentationById(conn, reportId, docId) {
+  const [result] = await conn.query(
+    'DELETE FROM report_documentations WHERE id = ? AND report_id = ?',
+    [docId, reportId]
+  );
+  return result.affectedRows;
+}
+
 module.exports = {
   pool,
   REPORT_TYPES,
@@ -191,4 +209,6 @@ module.exports = {
   deleteDocumentationsByReportId,
   insertDocumentation,
   findDocumentationsByReportId,
+  findDocumentationById,
+  deleteDocumentationById,
 };

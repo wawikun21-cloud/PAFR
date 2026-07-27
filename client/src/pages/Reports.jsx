@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/Toast';
 import { getReports, getReportById, deleteReport } from '@/services/reportsService';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import ReportForm from '@/components/reports/ReportForm';
+import ReportDetailsModal from '@/components/reports/ReportDetailsModal';
 import { cn } from '@/lib/utils';
 
 export default function Reports() {
@@ -24,6 +25,10 @@ export default function Reports() {
   const [editingReport, setEditingReport] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [viewingReport, setViewingReport] = useState(null);
+  const [viewingLoading, setViewingLoading] = useState(false);
+  const [editLoadingId, setEditLoadingId] = useState(null);
 
   const searchRef = useRef(null);
 
@@ -77,20 +82,56 @@ export default function Reports() {
   };
 
   const handleEditReport = async (report) => {
-    setShowForm(true);
     setEditingReport(null);
+    setEditLoadingId(report.id);
     try {
       const result = await getReportById(report.id);
       if (result.success && result.data) {
         setEditingReport(result.data);
+        setShowForm(true);
       } else {
         addToast(result.message || 'Failed to load report details', 'error');
-        setShowForm(false);
       }
     } catch {
       addToast('Network error. Could not load report.', 'error');
-      setShowForm(false);
+    } finally {
+      setEditLoadingId(null);
     }
+  };
+
+  const handleViewReport = async (report) => {
+    setViewingReport(report);
+    setViewingLoading(true);
+    try {
+      const result = await getReportById(report.id);
+      if (result.success && result.data) {
+        setViewingReport(result.data);
+      } else {
+        addToast(result.message || 'Failed to load report details', 'error');
+      }
+    } catch {
+      addToast('Network error. Could not load report.', 'error');
+    } finally {
+      setViewingLoading(false);
+    }
+  };
+
+  const handleCloseDetails = () => {
+    setViewingReport(null);
+    setViewingLoading(false);
+  };
+
+  const handleEditFromDetails = () => {
+    const report = viewingReport;
+    handleCloseDetails();
+    setEditingReport(report);
+    setShowForm(true);
+  };
+
+  const handleDeleteFromDetails = () => {
+    const report = viewingReport;
+    handleCloseDetails();
+    setDeleteTarget(report);
   };
 
   const confirmDelete = async () => {
@@ -197,7 +238,9 @@ export default function Reports() {
                 <ReportCard
                   key={report.id}
                   report={report}
-                  isAdmin={isAnyAdmin}
+                  isAnyAdmin={isAnyAdmin}
+                  editLoading={editLoadingId === report.id}
+                  onView={() => handleViewReport(report)}
                   onEdit={() => handleEditReport(report)}
                   onDelete={() => setDeleteTarget(report)}
                 />
@@ -240,6 +283,18 @@ export default function Reports() {
         />
       )}
 
+      {viewingReport && (
+        <ReportDetailsModal
+          report={viewingReport}
+          loading={viewingLoading}
+          isAnyAdmin={isAnyAdmin}
+          onClose={handleCloseDetails}
+          onEdit={handleEditFromDetails}
+          onDelete={handleDeleteFromDetails}
+          addToast={addToast}
+        />
+      )}
+
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete report?"
@@ -255,7 +310,7 @@ export default function Reports() {
   );
 }
 
-function ReportCard({ report, isAnyAdmin, onEdit, onDelete }) {
+function ReportCard({ report, isAnyAdmin, editLoading, onView, onEdit, onDelete }) {
   const typeStyles = {
     attendance: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20',
     readiness: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20',
@@ -264,8 +319,13 @@ function ReportCard({ report, isAnyAdmin, onEdit, onDelete }) {
   };
 
   return (
-    <div className={cn(
-      'relative flex flex-col gap-4 rounded-xl p-5',
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onView}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onView?.(); } }}
+      className={cn(
+      'relative flex flex-col gap-4 rounded-xl p-5 cursor-pointer',
       'border border-neutral-200 dark:border-neutral-800',
       'bg-white dark:bg-neutral-900',
       'hover:border-neutral-300 dark:hover:border-neutral-700',
@@ -317,10 +377,23 @@ function ReportCard({ report, isAnyAdmin, onEdit, onDelete }) {
         </p>
         {isAnyAdmin && (
           <div className="flex items-center gap-1">
-            <button onClick={onEdit} className="p-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors" title="Edit">
-              <Edit size={14} className="text-neutral-500" />
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              disabled={editLoading}
+              className="p-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+              title="Edit"
+            >
+              {editLoading ? (
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-neutral-400 border-t-transparent" />
+              ) : (
+                <Edit size={14} className="text-neutral-500" />
+              )}
             </button>
-            <button onClick={onDelete} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete">
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+              title="Delete"
+            >
               <Trash2 size={14} className="text-red-500" />
             </button>
           </div>

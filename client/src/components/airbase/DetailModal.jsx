@@ -64,27 +64,27 @@ export default function DetailModal({
       )}>
 
         {/* ── Header ──────────────────────────────────────────── */}
-        <div className="flex items-center justify-between shrink-0 border-b border-neutral-100 dark:border-neutral-800 px-6 py-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3 shrink-0 border-b border-neutral-100 dark:border-neutral-800 px-4 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <span className={cn(
               "flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm shrink-0",
               iconColor
             )}>
               <Icon size={18} strokeWidth={2} />
             </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-[15px] font-bold text-neutral-900 dark:text-neutral-50 leading-none">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <h2 className="truncate text-[15px] font-bold text-neutral-900 dark:text-neutral-50 leading-none">
                   {title}
                 </h2>
                 {badge && (
-                  <span className="rounded-md bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 font-mono text-[10px] text-neutral-500">
+                  <span className="shrink-0 rounded-md bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 font-mono text-[10px] text-neutral-500">
                     {badge}
                   </span>
                 )}
               </div>
               {subtitle && (
-                <p className="mt-0.5 text-[11px] text-neutral-400 dark:text-neutral-600">
+                <p className="mt-0.5 truncate text-[11px] text-neutral-400 dark:text-neutral-600">
                   {subtitle}
                 </p>
               )}
@@ -92,19 +92,19 @@ export default function DetailModal({
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
             <X size={15} />
           </button>
         </div>
 
         {/* ── Body ────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto styled-scroll px-6 py-5">
+        <div className="flex-1 overflow-y-auto styled-scroll px-4 py-5 sm:px-6">
           {children}
         </div>
 
         {/* ── Footer ──────────────────────────────────────────── */}
-        <div className="flex items-center justify-between shrink-0 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 px-6 py-4">
+        <div className="flex items-center justify-between shrink-0 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 px-4 py-4 sm:px-6">
           {footer}
         </div>
       </div>
@@ -130,12 +130,12 @@ export function DetailSection({ title, children }) {
 export function DetailRow({ label, value, valueClass }) {
   if (!value && value !== 0) return null;
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 bg-white dark:bg-neutral-900">
-      <span className="text-[12px] font-medium text-neutral-500 dark:text-neutral-500 shrink-0 w-36">
+    <div className="flex items-start justify-between gap-3 px-4 py-2.5 bg-white dark:bg-neutral-900">
+      <span className="text-[12px] font-medium text-neutral-500 dark:text-neutral-500 shrink-0 w-24 sm:w-36">
         {label}
       </span>
       <span className={cn(
-        "text-[13px] font-semibold text-neutral-800 dark:text-neutral-200 text-right",
+        "text-[13px] font-semibold text-neutral-800 dark:text-neutral-200 text-right break-words",
         valueClass
       )}>
         {value}

@@ -40,7 +40,7 @@ const TrainingDetails = ({ training, onClose }) => {
                   <p>{training.location || 'Not specified'}</p>
                 </div>
                 <div className="overview-item">
-                  <h3>Instructor</h3>
+                  <h3>Facilitator</h3>
                   <p>{training.instructor || 'Not assigned'}</p>
                 </div>
                 <div className="overview-item">

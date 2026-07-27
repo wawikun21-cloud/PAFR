@@ -12,7 +12,7 @@ function ChartCard({ title, icon: Icon, children, className }) {
   return (
     <div className={cn(
       "rounded-2xl border border-neutral-200 dark:border-neutral-800",
-      "bg-white dark:bg-neutral-900 p-5",
+      "bg-white dark:bg-neutral-900 p-4 sm:p-5",
       className
     )}>
       {title && (
@@ -87,14 +87,14 @@ export default function TrainingActivityChart() {
   return (
     <ChartCard>
       {/* Custom header with title on left + filters on right */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Left: Title + Icon */}
         <div className="flex items-center gap-2">
-          <Dumbbell size={15} className="text-indigo-500 dark:text-indigo-400" />
+          <Dumbbell size={15} className="text-indigo-500 dark:text-indigo-400 shrink-0" />
           <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight">
             Training Activity
           </h3>
-          <Info size={14} className="text-neutral-400 dark:text-neutral-500" />
+          <Info size={14} className="text-neutral-400 dark:text-neutral-500 shrink-0" />
         </div>
 
         {/* Right: Arsen filter only */}
@@ -102,7 +102,7 @@ export default function TrainingActivityChart() {
           <select
             value={selectedArsen}
             onChange={(e) => setSelectedArsen(e.target.value)}
-            className="rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full sm:w-auto rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             {arsenOptions.map(a => (
               <option key={a} value={a}>{a}</option>
@@ -111,9 +111,9 @@ export default function TrainingActivityChart() {
         </div>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-5">
+      <div className="flex flex-col lg:flex-row gap-5">
         {/* Left: Horizontal Bar Chart - pushed further left */}
-        <div className="xl:w-[50%]">
+        <div className="lg:w-1/2">
           <div className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
             Trainings by Group (This Year)
           </div>
@@ -162,13 +162,13 @@ export default function TrainingActivityChart() {
         </div>
 
         {/* Right: Top Squadrons Table */}
-        <div className="xl:w-2/5">
+        <div className="lg:w-2/5">
           <div className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
             Top Conducting Squadrons
           </div>
 
-          <div className="overflow-hidden">
-            <table className="w-[200px] text-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[200px] text-xs">
               <thead className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 <tr>
                   <th className="text-left py-2.5 px-4 font-medium text-neutral-600 dark:text-neutral-300">Squadron</th>

@@ -121,6 +121,38 @@ const reportsService = {
       };
     }
   },
+
+  deleteDocumentation: async (reportId, documentationId) => {
+    try {
+      const response = await api.delete(`/reports/${reportId}/documentations/${documentationId}`);
+      const body = response.data;
+      return {
+        success: body?.success !== false,
+        message: body?.message,
+        data: body?.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to delete documentation',
+      };
+    }
+  },
+
+  downloadDocumentation: async (reportId, documentationId) => {
+    try {
+      const response = await api.get(
+        `/reports/${reportId}/documentations/${documentationId}/download`,
+        { responseType: 'blob' }
+      );
+      return { success: true, blob: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to download documentation',
+      };
+    }
+  },
 };
 
 export const getReports = reportsService.getReports;
@@ -129,5 +161,7 @@ export const createReport = reportsService.createReport;
 export const updateReport = reportsService.updateReport;
 export const deleteReport = reportsService.deleteReport;
 export const uploadDocumentation = reportsService.uploadDocumentation;
+export const deleteDocumentation = reportsService.deleteDocumentation;
+export const downloadDocumentation = reportsService.downloadDocumentation;
 
 export default reportsService;

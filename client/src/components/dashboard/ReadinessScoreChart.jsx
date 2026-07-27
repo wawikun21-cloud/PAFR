@@ -11,7 +11,7 @@ function ChartCard({ title, icon: Icon, children, className }) {
   return (
     <div className={cn(
       "rounded-2xl border border-neutral-200 dark:border-neutral-800",
-      "bg-white dark:bg-neutral-900 p-6",
+      "bg-white dark:bg-neutral-900 p-4 sm:p-6",
       className
     )}>
       <div className="flex items-center gap-2.5 mb-5">
@@ -137,8 +137,8 @@ export default function ReadinessScoreChart() {
           <p className="mb-4 text-sm font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
             Score Composition
           </p>
-          <div className="flex items-center gap-6">
-            <div className="h-[100px] w-[100px] shrink-0 min-w-0">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
+            <div className="h-[100px] w-[100px] shrink-0 min-w-0 mx-auto sm:mx-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -157,7 +157,7 @@ export default function ReadinessScoreChart() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2.5 w-full">
               {composition.map((d) => (
                 <div key={d.name} className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: d.color }} />

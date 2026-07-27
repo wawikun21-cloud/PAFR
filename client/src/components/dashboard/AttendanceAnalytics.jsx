@@ -61,25 +61,25 @@ export default function AttendanceAnalytics() {
 
   return (
     <ChartCard>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <ClipboardCheck size={15} className="text-emerald-500" />
+          <ClipboardCheck size={15} className="text-emerald-500 shrink-0" />
           <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight">
             Attendance Analytics
           </h3>
-          <Info size={14} className="text-neutral-400" />
+          <Info size={14} className="text-neutral-400 shrink-0" />
         </div>
         <div className="flex items-center gap-2 text-xs">
           <select
             value={selectedArsen}
             onChange={(e) => setSelectedArsen(e.target.value)}
-            className="rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="min-w-0 flex-1 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:flex-none"
           >
             {arsenOptions.map((a) => (
               <option key={a} value={a}>{a === "All" ? "All Arsens" : a}</option>
             ))}
           </select>
-          <div className="text-neutral-500 dark:text-neutral-400">
+          <div className="shrink-0 text-neutral-500 dark:text-neutral-400">
             {filtered.length} squadrons
           </div>
         </div>

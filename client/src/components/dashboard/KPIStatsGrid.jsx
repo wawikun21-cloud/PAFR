@@ -149,7 +149,7 @@ function buildKPIData(kpis) {
 export default function KPIStatsGrid({ data }) {
   const kpiData = buildKPIData(data);
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       {kpiData.map((item) => (
         <KPICard key={item.id} item={item} />
       ))}

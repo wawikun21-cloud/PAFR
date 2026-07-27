@@ -13,7 +13,7 @@
  * @param {string|null} params.user_agent - Client user agent
  * @param {Function} [callback] - Optional callback (err, insertId)
  */
-function logAuditEntry(params, callback) {
+async function logAuditEntry(params, callback) {
     const query = `
         INSERT INTO audit_logs 
         (user_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent) 
@@ -31,14 +31,22 @@ function logAuditEntry(params, callback) {
         params.user_agent || null
     ];
 
-    db.query(query, values, (err, results) => {
-        if (err) {
-            console.error('Audit log insertion failed:', err.message);
-        }
+    try {
+        const [results] = await db.query(query, values);
         if (callback) {
-            callback(err, results ? results.insertId : null);
+            callback(null, results ? results.insertId : null);
         }
-    });
+        return results ? results.insertId : null;
+    } catch (err) {
+        // Audit logging is a side effect, not a critical path — never let a DB
+        // failure (timeout, connection drop, etc.) crash the process or block
+        // the caller. Log it and move on.
+        console.error('Audit log insertion failed:', err.message);
+        if (callback) {
+            callback(err, null);
+        }
+        return null;
+    }
 }
 
 /** Supports object params or shorthand (action, userId, details) from trainings module. */

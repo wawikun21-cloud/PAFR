@@ -143,11 +143,11 @@ export default function ReservistList({ squadronId, squadronName, arcenName, gro
     <>
       {/* ── Panel header ─────────────────────────────────────── */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <Users size={14} className="text-indigo-500" strokeWidth={1.8} />
-              <h3 className="text-[13px] font-bold text-neutral-800 dark:text-neutral-200">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <Users size={14} className="shrink-0 text-indigo-500" strokeWidth={1.8} />
+              <h3 className="truncate text-[13px] font-bold text-neutral-800 dark:text-neutral-200">
                 {squadronName} · Personnel
               </h3>
             </div>

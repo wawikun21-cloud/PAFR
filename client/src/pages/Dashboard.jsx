@@ -88,7 +88,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-10">
+    <div className="flex flex-col gap-4 pb-10 sm:gap-6">
       <DashboardFilters filters={filters} onChange={setFilters} />
 
       <KPIStatsGrid data={dashboardData?.kpis} />
@@ -136,12 +136,12 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-2">
         <ForceDistributionChart data={dashboardData?.force_distribution} />
         <TrainingActivityChart data={dashboardData?.trainings} />
       </div>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-2">
         <AttendanceAnalytics 
           data={dashboardData?.attendance} 
           composition={dashboardData?.readiness?.composition} 
@@ -154,7 +154,7 @@ export default function Dashboard() {
         professionData={dashboardData?.profession_distribution} 
       />
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-2">
         <LowPerformingAreas data={dashboardData?.low_performing} />
         <AlertsInsights 
           data={dashboardData?.alerts} 

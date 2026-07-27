@@ -3,7 +3,7 @@ const { query, param, body, validationResult } = require('express-validator');
 const attendanceController = require('../controllers/attendanceController');
 const { authenticateToken } = require('../middleware/auth');
 const { authorize, requireAdmin } = require('../middleware/rbac');
-const { authorizeFacilitator } = require('../middleware/facilitatorAuth');
+const { authorizeFacilitator, authorizeFacilitatorForAttendanceRecord } = require('../middleware/facilitatorAuth');
 
 const router = express.Router();
 
@@ -137,7 +137,7 @@ router.get(
 router.patch(
   '/:eventType/:id',
   authenticateToken,
-  authorizeFacilitator(),
+  authorizeFacilitatorForAttendanceRecord(),
   [
     ...idParam,
     param('eventType').isIn(['internal', 'external']).withMessage('eventType must be internal or external'),
@@ -209,6 +209,19 @@ router.get(
   ],
   rejectInvalid,
   attendanceController.getFacilitators
+);
+
+router.delete(
+  '/facilitators',
+  authenticateToken,
+  requireAdmin,
+  [
+    body('user_id').isInt({ min: 1 }).withMessage('user_id is required'),
+    body('training_id').optional().isInt({ min: 1 }),
+    body('external_training_id').optional().isInt({ min: 1 }),
+  ],
+  rejectInvalid,
+  attendanceController.removeFacilitator
 );
 
 module.exports = router;

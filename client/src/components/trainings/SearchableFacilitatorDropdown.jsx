@@ -123,6 +123,11 @@ export default function SearchableFacilitatorDropdown({ value, onChange, onSelec
       if (e.key === 'ArrowDown' && hasSquadrons && !value) {
         e.preventDefault();
         fetchReservists(query);
+      } else if (e.key === 'Enter') {
+        // Nothing to select yet (still debouncing/loading, or zero results) —
+        // swallow Enter here so it never bubbles up and submits the parent
+        // training form.
+        e.preventDefault();
       }
       return;
     }

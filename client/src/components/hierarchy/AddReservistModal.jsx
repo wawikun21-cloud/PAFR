@@ -373,7 +373,7 @@ export default function AddReservistModal({ isOpen, onClose, context = {}, onSub
 
           {/* ── Header ──────────────────────────────────────────── */}
           <div className={cn(
-            "flex shrink-0 items-center gap-3 border-b px-5 py-4",
+            "flex shrink-0 items-center gap-3 border-b px-4 py-4 sm:px-5",
             "border-neutral-200 dark:border-neutral-800"
           )}>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40">
@@ -405,7 +405,7 @@ export default function AddReservistModal({ isOpen, onClose, context = {}, onSub
           </div>
 
           {/* ── Body ──────────────────────────────────────────────── */}
-          <div className="flex-1 overflow-y-auto px-5 py-5">
+          <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-5">
             {success ? (
               <SuccessState name={fields.fullName} onClose={onClose} />
             ) : (
@@ -501,7 +501,7 @@ export default function AddReservistModal({ isOpen, onClose, context = {}, onSub
           {/* ── Footer ─────────────────────────────────────────── */}
           {!success && (
             <div className={cn(
-              "flex shrink-0 items-center justify-between gap-3 border-t px-5 py-4",
+              "flex shrink-0 flex-col-reverse gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5",
               "border-neutral-200 dark:border-neutral-800",
               "bg-neutral-50 dark:bg-neutral-900 rounded-b-2xl"
             )}>
@@ -513,7 +513,7 @@ export default function AddReservistModal({ isOpen, onClose, context = {}, onSub
                   type="button"
                   onClick={onClose}
                   className={cn(
-                    "rounded-lg border px-4 py-2 text-sm font-medium",
+                    "flex-1 rounded-lg border px-4 py-2 text-sm font-medium sm:flex-none",
                     "border-neutral-200 dark:border-neutral-700",
                     "text-neutral-600 dark:text-neutral-400",
                     "hover:bg-neutral-100 dark:hover:bg-neutral-800",
@@ -527,7 +527,7 @@ export default function AddReservistModal({ isOpen, onClose, context = {}, onSub
                   onClick={handleSubmit}
                   disabled={isSubmitting}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold",
+                    "flex flex-1 items-center justify-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold sm:flex-none",
                     "bg-indigo-600 hover:bg-indigo-700 text-white",
                     "shadow-sm shadow-indigo-200 dark:shadow-indigo-900/30",
                     "disabled:opacity-60 disabled:cursor-not-allowed",

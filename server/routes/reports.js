@@ -126,4 +126,23 @@ router.post(
   reportsController.uploadDocumentation
 );
 
+const docIdParam = [...idParam, param('docId').isInt({ min: 1 })];
+
+router.delete(
+  '/:id/documentations/:docId',
+  authenticateToken,
+  requireAdmin,
+  docIdParam,
+  rejectInvalid,
+  reportsController.deleteDocumentation
+);
+
+router.get(
+  '/:id/documentations/:docId/download',
+  authenticateToken,
+  docIdParam,
+  rejectInvalid,
+  reportsController.downloadDocumentation
+);
+
 module.exports = router;

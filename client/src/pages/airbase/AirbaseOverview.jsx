@@ -486,22 +486,22 @@ function MindanaoMapInline() {
           Click any marker or <strong>shaded boundary</strong> to <strong>drill down</strong> into its personnel summary.
           Boundaries can be toggled off to reduce clutter.
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Layer switcher */}
-          <div className="flex items-center gap-1 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100/60 dark:bg-neutral-800/60 p-1">
+          <div className="flex items-center gap-1 overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100/60 dark:bg-neutral-800/60 p-1 styled-scroll">
             {LAYERS.map((l) => {
               const Icon = l.icon;
               const isActive = layer === l.key;
               return (
                 <button key={l.key} onClick={() => setLayer(l.key)}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all duration-150",
+                    "flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all duration-150",
                     isActive
                       ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm"
                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
                   )}
                 >
-                  <Icon size={13} /> {l.label}
+                  <Icon size={13} /> <span className="hidden sm:inline">{l.label}</span>
                 </button>
               );
             })}
@@ -512,7 +512,7 @@ function MindanaoMapInline() {
             disabled={layer === "squadron"}
             title={layer === "squadron" ? "Boundaries are not available at squadron level" : "Toggle territory boundary polygons"}
             className={cn(
-              "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+              "flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
               layer === "squadron"
                 ? "border-neutral-200 bg-neutral-100 text-neutral-300 cursor-not-allowed dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-600"
                 : showBoundaries
@@ -524,7 +524,7 @@ function MindanaoMapInline() {
           </button>
           {selected && (
             <button onClick={clearSelection}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
             >
               <ChevronLeft size={14} /> Overview
             </button>
@@ -534,7 +534,7 @@ function MindanaoMapInline() {
 
 
 
-      <div className="relative rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm" style={{ height: "calc(100vh - 340px)", minHeight: "480px" }}>
+      <div className="relative rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm h-[60vh] min-h-[360px] sm:h-[70vh] sm:min-h-[420px] lg:h-[calc(100vh-340px)] lg:min-h-[480px]">
         <MapContainer center={MINDANAO_CENTER} zoom={MINDANAO_ZOOM} className="h-full w-full z-0" zoomControl={false}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -777,7 +777,7 @@ function MindanaoMapInline() {
               return parts;
             })();
            return (
-             <div className="absolute right-4 top-4 z-[1000] w-80 rounded-xl border border-neutral-200 bg-white shadow-xl dark:bg-neutral-900 dark:border-neutral-700 overflow-hidden">
+             <div className="absolute left-3 right-3 top-3 z-[1000] max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-xl dark:bg-neutral-900 dark:border-neutral-700 sm:left-auto sm:right-4 sm:top-4 sm:max-h-[calc(100%-2rem)] sm:w-80">
                <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-700 px-3 py-2.5">
                  <div className="flex items-center gap-2 min-w-0">
                    <Icon size={15} className={cn("shrink-0", meta.accent)} />
@@ -866,7 +866,7 @@ function MindanaoMapInline() {
         })()}
 
         {/* Legend — reflects the active layer */}
-        <div className="absolute bottom-4 left-4 z-[1000] rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm px-3 py-2 shadow-sm max-h-[40vh] overflow-y-auto">
+        <div className="absolute bottom-3 left-3 z-[1000] w-[45vw] max-w-[220px] rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm px-3 py-2 shadow-sm max-h-[40vh] overflow-y-auto sm:bottom-4 sm:left-4 sm:w-auto sm:max-w-none">
           {layer === "arsen" && (
             <>
               <p className="text-[8px] font-semibold uppercase tracking-wider text-neutral-400 mb-1">ARSEN Regions</p>
@@ -1012,7 +1012,7 @@ function HierarchyView() {
   return (
     <div className="flex flex-col gap-6">
       {/* Summary stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <SummaryCard label="Airbases" value={summary?.total_arcens ?? totalArcens} />
         <SummaryCard label="ARCENs" value={summary?.total_arcens ?? totalArcens} />
         <SummaryCard label="Groups" value={summary?.total_groups ?? totalGroups} />
@@ -1021,8 +1021,8 @@ function HierarchyView() {
       </div>
 
       {/* Search + collapse */}
-      <div className="flex items-center gap-3">
-        <div className="relative max-w-xs flex-1">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-full flex-1 sm:max-w-xs">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
           <input
             type="text"
@@ -1045,7 +1045,7 @@ function HierarchyView() {
         </div>
         <button onClick={resetAll}
           className={cn(
-            "flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium",
+            "flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium",
             "border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900",
             "text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200",
             "transition-all duration-150"
