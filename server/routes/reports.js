@@ -67,6 +67,7 @@ const documentationUploadMiddleware = (req, res, next) => {
 router.get(
   '/',
   authenticateToken,
+  requireAdmin,
   pageLimitValidators,
   rejectInvalid,
   reportsController.listReports
@@ -75,6 +76,7 @@ router.get(
 router.get(
   '/:id',
   authenticateToken,
+  requireAdmin,
   [...idParam],
   rejectInvalid,
   reportsController.getReport

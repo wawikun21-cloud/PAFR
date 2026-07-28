@@ -64,3 +64,6 @@ export const getMyEvents = () =>
 
 export const getEventStatus = (eventType, id) =>
   api.get(`/attendance/event-status/${eventType}/${id}`);
+
+export const getMyAttendance = () =>
+  api.get('/reservists/my/attendance');

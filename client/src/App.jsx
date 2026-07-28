@@ -1,10 +1,11 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import AppLayout from "@/layout/AppLayout";
 import { lazy, Suspense } from "react";
 
 import { ToastProvider } from "@/components/Toast";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Pages
 const Dashboard         = lazy(() => import("@/pages/Dashboard"));
@@ -97,6 +98,26 @@ function SuperAdminProtectedWrapper(Component) {
   );
 }
 
+function ProtectedLayout() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <PageLoader />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <ErrorBoundary>
+      <ToastProvider>
+        <AppLayout />
+      </ToastProvider>
+    </ErrorBoundary>
+  );
+}
+
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -104,13 +125,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: (
-      <ErrorBoundary>
-        <ToastProvider>
-          <AppLayout />
-        </ToastProvider>
-      </ErrorBoundary>
-    ),
+    element: <ProtectedLayout />,
     children: [
       { index: true, element: AdminProtectedWrapper(Dashboard), handle: { title: "Dashboard" } },
       { path: "landing", element: ProtectedWrapper(Landing), handle: { title: "Landing" } },
@@ -122,16 +137,16 @@ const router = createBrowserRouter([
       { path: "analytics", element: AdminProtectedWrapper(Analytics), handle: { title: "Readiness & Analytics" } },
       { path: "logistics", element: AdminProtectedWrapper(Logistics), handle: { title: "Logistics & Supplies" } },
       { path: "alerts", element: ProtectedWrapper(Alerts), handle: { title: "Alerts" } },
-      { path: "reports", element: ProtectedWrapper(Reports), handle: { title: "Reports" } },
+      { path: "reports", element: AdminProtectedWrapper(Reports), handle: { title: "Reports" } },
       { path: "settings", element: SuperAdminProtectedWrapper(Settings), handle: { title: "Settings" } },
       { path: "audit-logs", element: SuperAdminProtectedWrapper(AuditLogs), handle: { title: "Audit Logs" } },
       // Airbase hierarchy pages: open to every authenticated role. Each page
       // renders manage controls or read-only content per-row based on the
       // backend's `can_manage` flag — the route itself no longer gates by role.
       { path: "airbase", element: ProtectedWrapper(AirbaseOverview), handle: { title: "Airbase Overview" } },
-      { path: "airbase/arcens", element: ProtectedWrapper(ManageArcens), handle: { title: "Manage Arcens" } },
-      { path: "airbase/groups", element: ProtectedWrapper(ManageGroups), handle: { title: "Manage Groups" } },
-      { path: "airbase/squadrons", element: ProtectedWrapper(ManageSquadrons), handle: { title: "Manage Squadrons" } },
+      { path: "airbase/arcens", element: AdminProtectedWrapper(ManageArcens), handle: { title: "Manage Arcens" } },
+      { path: "airbase/groups", element: AdminProtectedWrapper(ManageGroups), handle: { title: "Manage Groups" } },
+      { path: "airbase/squadrons", element: AdminProtectedWrapper(ManageSquadrons), handle: { title: "Manage Squadrons" } },
     ],
   },
 ]);

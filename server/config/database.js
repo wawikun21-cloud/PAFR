@@ -13,7 +13,9 @@ const dbConfig = {
   connectionLimit: 10,
   queueLimit: 0,
   connectTimeout: 10000,
-  timezone: '+00:00'
+  timezone: '+00:00',
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
 };
 
 const pool = mysql.createPool(dbConfig);

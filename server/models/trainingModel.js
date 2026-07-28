@@ -13,7 +13,7 @@ function toDatetime(dateStr, endOfDay = false) {
   return s;
 }
 
-async function countInternal({ search, status, type }) {
+async function countInternal({ search, status, type, squadronId }) {
   let sql = `
     SELECT COUNT(DISTINCT t.id) AS total
     FROM trainings t
@@ -37,12 +37,20 @@ async function countInternal({ search, status, type }) {
     sql += ` AND JSON_VALID(a.description) AND JSON_UNQUOTE(JSON_EXTRACT(a.description, '$.activityType')) = ?`;
     params.push(type);
   }
+  if (squadronId) {
+    sql += ` AND EXISTS (
+      SELECT 1 FROM internal_training_participants itp
+      JOIN reservist_assignments ra ON itp.reservist_id = ra.reservist_id AND ra.is_primary = TRUE
+      WHERE itp.training_id = t.id AND ra.squadron_id = ?
+    )`;
+    params.push(squadronId);
+  }
 
   const [rows] = await db.query(sql, params);
   return rows[0]?.total ?? 0;
 }
 
-async function findInternalMany({ page, limit, search, status, type }) {
+async function findInternalMany({ page, limit, search, status, type, squadronId }) {
   const offset = (page - 1) * limit;
   let sql = `
     SELECT
@@ -83,6 +91,14 @@ async function findInternalMany({ page, limit, search, status, type }) {
   if (type) {
     sql += ` AND JSON_VALID(a.description) AND JSON_UNQUOTE(JSON_EXTRACT(a.description, '$.activityType')) = ?`;
     params.push(type);
+  }
+  if (squadronId) {
+    sql += ` AND EXISTS (
+      SELECT 1 FROM internal_training_participants itp
+      JOIN reservist_assignments ra ON itp.reservist_id = ra.reservist_id AND ra.is_primary = TRUE
+      WHERE itp.training_id = t.id AND ra.squadron_id = ?
+    )`;
+    params.push(squadronId);
   }
 
   sql += ' ORDER BY t.start_datetime DESC LIMIT ? OFFSET ?';

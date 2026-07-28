@@ -45,7 +45,24 @@ router.get('/', authenticateToken, [
         const lowStock = req.query.low_stock === 'true';
         const search = req.query.q;
 
-        let sql = 'SELECT * FROM supplies WHERE 1=1';
+        let sql = `SELECT s.*, 
+    (SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'reservist_id', r.id,
+            'first_name', r.first_name,
+            'last_name', r.last_name,
+            'service_number', r.service_number,
+            'rank', r.rank,
+            'quantity_issued', si.quantity_issued,
+            'issued_date', si.issued_date,
+            'due_return_date', si.due_return_date,
+            'returned_date', si.returned_date,
+            'issuance_type', si.issuance_type
+        )
+    ) FROM supply_issuances si 
+    JOIN reservists r ON si.reservist_id = r.id 
+    WHERE si.supply_id = s.id AND si.returned_date IS NULL) as assigned_reservists
+FROM supplies s WHERE 1=1`;
         let countSql = 'SELECT COUNT(*) as total FROM supplies WHERE 1=1';
         const params = [];
         const countParams = [];

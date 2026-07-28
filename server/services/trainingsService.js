@@ -124,10 +124,11 @@ async function listInternalTrainings(query) {
     ? query.status
     : null;
   const type = query.type && query.type !== 'all' ? query.type : null;
+  const squadronId = query.squadronId ? Number(query.squadronId) : null;
 
   const [total, rows] = await Promise.all([
-    trainingModel.countInternal({ search: search || null, status, type }),
-    trainingModel.findInternalMany({ page, limit, search: search || null, status, type }),
+    trainingModel.countInternal({ search: search || null, status, type, squadronId }),
+    trainingModel.findInternalMany({ page, limit, search: search || null, status, type, squadronId }),
   ]);
 
   return {
@@ -456,10 +457,11 @@ async function listExternalTrainings(query) {
   const status = query.status && query.status !== 'all' && externalModel.isValidExternalStatus(query.status)
     ? query.status
     : null;
+  const squadronId = query.squadronId ? Number(query.squadronId) : null;
 
   const [total, rows] = await Promise.all([
-    externalModel.countExternal({ search: search || null, status }),
-    externalModel.findExternalMany({ page, limit, search: search || null, status }),
+    externalModel.countExternal({ search: search || null, status, squadronId }),
+    externalModel.findExternalMany({ page, limit, search: search || null, status, squadronId }),
   ]);
 
   return {

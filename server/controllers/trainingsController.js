@@ -22,16 +22,47 @@ function sendError(res, err, fallback = 'Request failed') {
 }
 
 function listInternal(req, res) {
-  trainingsService
-    .listInternalTrainings(req.query)
-    .then((data) =>
-      res.json({
-        success: true,
-        message: 'OK',
-        data,
+  const query = { ...req.query };
+  if (req.user?.role === 'reservist') {
+    const db = require('../config/database');
+    db.query('SELECT id FROM reservists WHERE user_id = ?', [req.user.id])
+      .then(([rRows]) => {
+        if (rRows.length === 0) {
+          query.squadronId = -1;
+          return trainingsService.listInternalTrainings(query);
+        }
+        return db.query(
+          'SELECT squadron_id FROM reservist_assignments WHERE reservist_id = ? AND is_primary = TRUE',
+          [rRows[0].id]
+        ).then(([aRows]) => {
+          if (aRows.length > 0) {
+            query.squadronId = aRows[0].squadron_id;
+          } else {
+            query.squadronId = -1;
+          }
+          return trainingsService.listInternalTrainings(query);
+        });
       })
-    )
-    .catch((err) => sendError(res, err, 'Failed to list trainings'));
+      .then((data) =>
+        res.json({
+          success: true,
+          message: 'OK',
+          data,
+        })
+      )
+      .catch((err) => sendError(res, err, 'Failed to list trainings'));
+  } else {
+    trainingsService
+      .listInternalTrainings(query)
+      .then((data) =>
+        res.json({
+          success: true,
+          message: 'OK',
+          data,
+        })
+      )
+      .catch((err) => sendError(res, err, 'Failed to list trainings'));
+  }
 }
 
 function getInternal(req, res) {
@@ -122,10 +153,41 @@ function deleteActivity(req, res) {
 }
 
 function listExternal(req, res) {
-  trainingsService
-    .listExternalTrainings(req.query)
-    .then((data) => res.json({ success: true, message: 'OK', data }))
-    .catch((err) => sendError(res, err, 'Failed to list external trainings'));
+  const query = { ...req.query };
+  if (req.user?.role === 'reservist') {
+    const db = require('../config/database');
+    db.query('SELECT id FROM reservists WHERE user_id = ?', [req.user.id])
+      .then(([rRows]) => {
+        if (rRows.length === 0) {
+          query.squadronId = -1;
+          return trainingsService.listExternalTrainings(query);
+        }
+        return db.query(
+          'SELECT squadron_id FROM reservist_assignments WHERE reservist_id = ? AND is_primary = TRUE',
+          [rRows[0].id]
+        ).then(([aRows]) => {
+          if (aRows.length > 0) {
+            query.squadronId = aRows[0].squadron_id;
+          } else {
+            query.squadronId = -1;
+          }
+          return trainingsService.listExternalTrainings(query);
+        });
+      })
+      .then((data) =>
+        res.json({
+          success: true,
+          message: 'OK',
+          data,
+        })
+      )
+      .catch((err) => sendError(res, err, 'Failed to list external trainings'));
+  } else {
+    trainingsService
+      .listExternalTrainings(query)
+      .then((data) => res.json({ success: true, message: 'OK', data }))
+      .catch((err) => sendError(res, err, 'Failed to list external trainings'));
+  }
 }
 
 function getExternal(req, res) {

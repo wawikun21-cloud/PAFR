@@ -11,9 +11,12 @@ import {
   getInternalAttendance,
   getExternalAttendance,
   updateAttendanceStatus,
+  getMyAttendance,
 } from '@/services/attendanceApiService';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Attendance() {
+  const { isReservist } = useAuth();
   const [view, setView] = useState('dashboard');
   const [eventType, setEventType] = useState('internal');
   const [trainingId, setTrainingId] = useState(null);
@@ -24,6 +27,8 @@ export default function Attendance() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('scan');
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [personalAttendance, setPersonalAttendance] = useState([]);
+  const [loadingPersonal, setLoadingPersonal] = useState(false);
 
   const urlParams = new URLSearchParams(window.location.search);
   const urlEventType = urlParams.get('type') || 'internal';
@@ -36,6 +41,25 @@ export default function Attendance() {
       setView('event');
     }
   }, [urlTrainingId, urlEventType]);
+
+  const loadPersonalAttendance = useCallback(async () => {
+    setLoadingPersonal(true);
+    setError(null);
+    try {
+      const res = await getMyAttendance();
+      setPersonalAttendance(res.data?.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load personal attendance');
+    } finally {
+      setLoadingPersonal(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isReservist && view === 'dashboard') {
+      loadPersonalAttendance();
+    }
+  }, [isReservist, view, loadPersonalAttendance]);
 
   const loadAttendance = useCallback(async () => {
     if (!trainingId) return;
@@ -120,6 +144,64 @@ export default function Attendance() {
   };
 
   if (view === 'dashboard') {
+    if (isReservist) {
+      return (
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">My Attendance</h1>
+          {error && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl border border-red-200 dark:border-red-800">
+              {error}
+            </div>
+          )}
+          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
+                    <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">Training</th>
+                    <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">Date</th>
+                    <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {loadingPersonal ? (
+                    <tr><td colSpan={3} className="px-4 py-8 text-center text-neutral-500">Loading...</td></tr>
+                  ) : personalAttendance.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-12 text-center text-neutral-500">
+                        No attendance records found.
+                      </td>
+                    </tr>
+                  ) : (
+                    personalAttendance.map((record) => (
+                      <tr key={record.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                        <td className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100">{record.training_title}</td>
+                        <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
+                          {record.start_datetime
+                            ? new Date(record.start_datetime).toLocaleDateString()
+                            : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            record.status === 'present' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' :
+                            record.status === 'absent' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' :
+                            record.status === 'late' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' :
+                            record.status === 'excused' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' :
+                            'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                          }`}>
+                            {record.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         <AttendanceDashboard onSelectEvent={handleSelectEvent} />

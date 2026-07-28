@@ -4,6 +4,21 @@ const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
+async function dbQueryWithRetry(query, params = [], retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await db.query(query, params);
+    } catch (err) {
+      const isConnError = err.code === 'ECONNRESET' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT';
+      if (isConnError && attempt < retries) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 /**
  * Alerts & Insights API
  * - Broadcast alerts (admin-created) from `alerts` + per-user read via `user_alerts`
@@ -72,7 +87,7 @@ async function getRelevantBroadcastAlerts(user, filters = {}) {
 
   sql += ` ORDER BY a.created_at DESC LIMIT 200 `;
 
-  const [rows] = await db.query(sql, queryParams);
+  const [rows] = await dbQueryWithRetry(sql, queryParams);
 
   return rows.map((r) => ({
     id: `broadcast-${r.id}`,
@@ -122,7 +137,7 @@ async function getPersonalTrainingAlerts(user, filters = {}) {
 
   sql += ' ORDER BY a.created_at DESC LIMIT 200 ';
 
-  const [rows] = await db.query(sql, params);
+  const [rows] = await dbQueryWithRetry(sql, params);
 
   return rows.map((r) => ({
     id: `broadcast-${r.id}`,   // re-use broadcast prefix so existing mark-as-read route works
@@ -140,7 +155,7 @@ async function getPersonalTrainingAlerts(user, filters = {}) {
 async function syncAndGetSystemAlerts(user, filters = {}) {
   const { severity, type: alertTypeFilter, unread_only } = filters;
 
-  const [rules] = await db.query('SELECT * FROM alert_rules WHERE is_active = 1');
+  const [rules] = await dbQueryWithRetry('SELECT * FROM alert_rules WHERE is_active = 1');
   const ruleMap = Object.fromEntries(rules.map((r) => [r.type, r]));
 
   const toEnsure = [];
@@ -149,7 +164,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
   {
     const rule = ruleMap.readiness_low;
     const th = rule?.threshold || 60;
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
       `SELECT squadron_id, squadron_name, avg_readiness_score, group_id, arsen_id 
        FROM v_squadron_readiness 
        WHERE avg_readiness_score < ?`,
@@ -169,7 +184,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
 
   // ── 2. Reservists below 60% readiness (per squadron aggregate) ─────
   {
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
       `SELECT 
          vs.squadron_id, vs.squadron_name, vs.group_id, vs.arsen_id,
          COUNT(*) AS n,
@@ -194,7 +209,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
   // ── 3. No readiness assessment in last 180 days ────────────────────
   {
     const lookback = 180;
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
       `SELECT 
          s.id AS squadron_id, s.name AS squadron_name, 
          g.id AS group_id, g.arsen_id,
@@ -222,7 +237,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
   // ── 4. No training attendance in last 90 days ─────────────────────
   {
     const lookback = 90;
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
       `SELECT 
          vs.squadron_id, vs.squadron_name, vs.group_id, vs.arsen_id,
          COUNT(DISTINCT r.id) AS n
@@ -260,7 +275,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
   {
     const rule = ruleMap.low_attendance;
     const th = rule?.threshold || 70;
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
       `SELECT squadron_id, squadron_name, avg_attendance_rate, group_id, arsen_id 
        FROM v_squadron_readiness 
        WHERE avg_attendance_rate < ?`,
@@ -280,7 +295,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
 
   // ── 6. Low supply stock ────────────────────────────────────────────
   {
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
       `SELECT id, name, quantity_available, COALESCE(reorder_level, 10) AS reorder_level
        FROM supplies 
        WHERE quantity_available <= COALESCE(reorder_level, 10)`
@@ -298,7 +313,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
 
   // ── 7. Overdue supply returns ──────────────────────────────────────
   {
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
       `SELECT COUNT(*) AS n FROM supply_issuances 
        WHERE returned_date IS NULL AND due_return_date < CURDATE()`
     );
@@ -316,7 +331,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
 
   // ── 8. Standby Reserve count ───────────────────────────────────────
   {
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
       `SELECT COUNT(*) AS n FROM reservists 
        WHERE reserve_status = 'Standby Reserve' AND is_active = 1`
     );
@@ -334,7 +349,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
 
   // ── 9. Incomplete profile data ─────────────────────────────────────
   {
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
       `SELECT COUNT(*) AS n FROM reservists 
        WHERE is_active = 1 AND (
          phone_number IS NULL OR TRIM(phone_number) = '' OR
@@ -356,7 +371,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
 
   // ── 10. Medical unfit/limited ──────────────────────────────────────
   {
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
       `SELECT COUNT(DISTINCT r.id) AS n
        FROM readiness rd
        JOIN reservists r ON rd.reservist_id = r.id
@@ -380,7 +395,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
 
   // ── 11. Upcoming training (48h) ──────────────────────────────────
   {
-    const [rows] = await db.query(
+    const [rows] = await dbQueryWithRetry(
        `SELECT t.id, t.title, t.start_datetime,
           (SELECT COUNT(*) FROM internal_training_participants itp 
            WHERE itp.training_id = t.id) AS participant_count
@@ -409,7 +424,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
       : 'alert_type = ? AND entity_id = ?';
     const checkParams = entityIsNull ? [ruleType] : [ruleType, entityId];
 
-    const [existing] = await db.query(
+    const [existing] = await dbQueryWithRetry(
       `SELECT id FROM system_alerts 
        WHERE ${checkWhere}
        LIMIT 1`,
@@ -424,7 +439,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
       ? 'alert_type = ? AND entity_id IS NULL AND is_acknowledged = 0'
       : 'alert_type = ? AND entity_id = ? AND is_acknowledged = 0';
     const updateParams = entityIsNull ? [ruleType] : [ruleType, entityId];
-    await db.query(
+    await dbQueryWithRetry(
       `UPDATE system_alerts 
        SET is_acknowledged = 1, acknowledged_at = NOW() 
        WHERE ${updateWhere}`,
@@ -434,7 +449,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
     const rule = ruleMap[ruleType];
     const ruleId = rule ? rule.id : null;
 
-    const [ins] = await db.query(
+    const [ins] = await dbQueryWithRetry(
       `INSERT INTO system_alerts 
        (rule_id, alert_type, severity, title, message, entity_type, entity_id, entity_name, squadron_id, group_id, arsen_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -488,7 +503,7 @@ async function syncAndGetSystemAlerts(user, filters = {}) {
     FIELD(severity, 'critical', 'warning', 'info'), created_at DESC 
     LIMIT 300 `;
 
-  const [systemRows] = await db.query(systemSql, sysParams);
+  const [systemRows] = await dbQueryWithRetry(systemSql, sysParams);
 
   return systemRows.map((r) => ({
     id: `system-${r.id}`,
@@ -643,7 +658,7 @@ router.post(
         end_date = null,
       } = req.body;
 
-      const [result] = await db.query(
+      const [result] = await dbQueryWithRetry(
         `INSERT INTO alerts 
          (title, message, target_role, target_group_id, target_squadron_id, target_area_id, 
           created_by, start_date, end_date)
@@ -661,7 +676,7 @@ router.post(
         ]
       );
 
-      const [newAlert] = await db.query('SELECT * FROM alerts WHERE id = ?', [result.insertId]);
+      const [newAlert] = await dbQueryWithRetry('SELECT * FROM alerts WHERE id = ?', [result.insertId]);
 
       res.status(201).json({
         status: 'success',
@@ -692,14 +707,14 @@ router.patch('/:id/read', authenticateToken, async (req, res) => {
     const [source, numericId] = id.split('-');
 
     if (source === 'broadcast') {
-      await db.query(
+      await dbQueryWithRetry(
         `INSERT INTO user_alerts (user_id, alert_id, is_read, read_at)
          VALUES (?, ?, 1, NOW())
          ON DUPLICATE KEY UPDATE is_read = 1, read_at = NOW()`,
         [req.user.id, numericId]
       );
     } else if (source === 'system') {
-      await db.query(
+      await dbQueryWithRetry(
         `UPDATE system_alerts 
          SET is_acknowledged = 1, acknowledged_by = ?, acknowledged_at = NOW()
          WHERE id = ?`,
@@ -723,7 +738,7 @@ router.patch('/:id/read', authenticateToken, async (req, res) => {
 router.get('/insights', authenticateToken, async (req, res) => {
   try {
     // Top training squadrons this month
-    const [topTrainings] = await db.query(`
+    const [topTrainings] = await dbQueryWithRetry(`
       SELECT 
         s.name AS squadron_name,
         COUNT(DISTINCT t.id) AS training_count
@@ -739,7 +754,7 @@ router.get('/insights', authenticateToken, async (req, res) => {
     `);
 
     // Highest attendance (from view)
-    const [highAttendance] = await db.query(`
+    const [highAttendance] = await dbQueryWithRetry(`
       SELECT squadron_name, avg_attendance_rate
       FROM v_squadron_readiness
       ORDER BY avg_attendance_rate DESC
@@ -747,7 +762,7 @@ router.get('/insights', authenticateToken, async (req, res) => {
     `);
 
     // Overall force readiness trend (simple month vs previous if data allows)
-    const [[currentReadiness]] = await db.query('SELECT * FROM v_overall_readiness');
+    const [[currentReadiness]] = await dbQueryWithRetry('SELECT * FROM v_overall_readiness');
 
     const insights = {
       top_training_squadrons: topTrainings,

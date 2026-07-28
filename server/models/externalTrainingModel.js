@@ -2,7 +2,7 @@ const pool = require('../config/database');
 
 const EXTERNAL_STATUSES = ['draft', 'open', 'closed', 'completed'];
 
-async function countExternal({ search, status }) {
+async function countExternal({ search, status, squadronId }) {
   let sql = 'SELECT COUNT(*) AS total FROM external_trainings WHERE 1 = 1';
   const params = [];
   if (status) {
@@ -14,11 +14,23 @@ async function countExternal({ search, status }) {
     const q = `%${search}%`;
     params.push(q, q);
   }
+  if (squadronId) {
+    const squadronJson = JSON.stringify({ squadron_id: Number(squadronId) });
+    sql += ` AND (
+      JSON_CONTAINS(squadron_limits, '${squadronJson}')
+      OR EXISTS (
+        SELECT 1 FROM training_registrations tr
+        WHERE tr.training_id = external_trainings.id
+        AND JSON_UNQUOTE(JSON_EXTRACT(tr.participant_data, '$.squadron_id')) = ?
+      )
+    )`;
+    params.push(squadronId);
+  }
   const [rows] = await pool.query(sql, params);
   return rows[0]?.total ?? 0;
 }
 
-async function findExternalMany({ page, limit, search, status }) {
+async function findExternalMany({ page, limit, search, status, squadronId }) {
   const offset = (page - 1) * limit;
   let sql = `
     SELECT id, title, description, start_date, start_time, venue, status, capacity,
@@ -35,6 +47,18 @@ async function findExternalMany({ page, limit, search, status }) {
     sql += ' AND (title LIKE ? OR description LIKE ?)';
     const q = `%${search}%`;
     params.push(q, q);
+  }
+  if (squadronId) {
+    const squadronJson = JSON.stringify({ squadron_id: Number(squadronId) });
+    sql += ` AND (
+      JSON_CONTAINS(squadron_limits, '${squadronJson}')
+      OR EXISTS (
+        SELECT 1 FROM training_registrations tr
+        WHERE tr.training_id = external_trainings.id
+        AND JSON_UNQUOTE(JSON_EXTRACT(tr.participant_data, '$.squadron_id')) = ?
+      )
+    )`;
+    params.push(squadronId);
   }
   sql += ' ORDER BY start_date DESC, id DESC LIMIT ? OFFSET ?';
   params.push(limit, offset);

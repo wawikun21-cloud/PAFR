@@ -68,10 +68,8 @@ export const menuItems = [
      path: "/airbase",
      icon: PlaneTakeoff,
      description: "Airbase hierarchy management",
-     // No roles restriction: every authenticated role (including reservist)
-     // can view the hierarchy. Whether a given ARCEN/Group/Squadron page
-     // renders manage controls or read-only content is decided per-row by
-     // the backend's `can_manage` flag, not by hiding the page/menu entry.
+     // Overview is open to all authenticated users with read-only data scoped
+     // by the backend. Manage pages are admin-only.
      children: [
       {
         name: "Overview",
@@ -85,21 +83,24 @@ export const menuItems = [
         path: "/airbase/arcens",
         icon: Shield,
         description: "ARCEN units management",
+        roles: ADMIN_ROLES,
       },
       {
         name: "Manage Groups",
         path: "/airbase/groups",
         icon: Users,
         description: "Reserve groups management",
+        roles: ADMIN_ROLES,
       },
       {
         name: "Manage Squadrons",
         path: "/airbase/squadrons",
         icon: Layers,
         description: "Squadron management",
+        roles: ADMIN_ROLES,
       },
     ],
-  },
+   },
   {
     name: "Events",
     path: "/trainings",
@@ -123,6 +124,7 @@ export const menuItems = [
         path: "/reports",
         icon: FileText,
         description: "Generate reports",
+        roles: ADMIN_ROLES,
       },
     ],
   },

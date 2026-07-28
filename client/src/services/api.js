@@ -172,10 +172,6 @@ export const createAlert = (data) => api.post('/alerts', data);
 export const markAlertRead = (id) => api.patch(`/alerts/${id}/read`);
 export const getAlertsInsights = () => api.get('/alerts/insights');
 
-// Map
-export const getMapSquadrons = (params = {}) => api.get('/map/squadrons', { params });
-export const getMapSummary = () => api.get('/map/summary');
-
 // Self-service profile (reservist)
 export const getMyProfile = () => api.get('/reservists/my/profile');
 export const generateMyQR = () => api.post('/reservists/my/profile/generate-qr');

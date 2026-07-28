@@ -120,7 +120,8 @@ router.get('/', [
         let squadronsParams = [...groupIds];
 
         // admin_squadron only owns a single squadron — narrow down to it.
-        if (req.hierarchyScope && req.user.role === 'admin_squadron') {
+        // reservist should also only see their assigned squadron.
+        if (req.hierarchyScope && (req.user.role === 'admin_squadron' || req.user.role === 'reservist')) {
           squadronsWhere += ' AND s.id = ?';
           squadronsParams.push(req.hierarchyScope.squadron_id);
         }
