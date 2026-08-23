@@ -726,7 +726,7 @@ export default function Analytics() {
             <RankingChart
               data={arsenReadiness}
               labelKey="arsen_name"
-              title="Readiness by Arsen"
+              title="Readiness by Arcen"
               onItemClick={navigateToArsen}
               emptyMessage="No arsen data available"
             />

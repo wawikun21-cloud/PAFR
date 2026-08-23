@@ -1,0 +1,611 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --bg-page: #F2F2F2;
+  --bg-surface: #ffffff;
+  --bg-sidebar: #132F45;
+  --bg-topbar: #ffffff;
+  --bg-hover: rgba(255, 255, 255, 0.15);
+  --bg-active: rgba(255, 255, 255, 0.2);
+  --bg-input: #ffffff;
+  --bg-subtle: #f6fafd;
+  --bg-cover-overlay: rgba(0, 0, 0, 0.4);
+  --bg-primary: #020F59;
+  --border: oklch(0.922 0 0);
+  --border-light: #edf3f7;
+  --border-sidebar: #1d3f57;
+  --text-primary: #132F45;
+  --text-secondary: #32667F;
+  --text-muted: #405b6b;
+  --text-on-sidebar: #a0c4d8;
+  --accent-danger: #cc1f1f;
+  --accent-amber: #1D3067;
+  --accent-orange: #1D3067;
+  --accent-gold: #d9a300;
+  --status-green: #205733;
+  --status-red: #cc1f1f;
+  --shadow-sm: 0 1px 3px rgba(19,47,69,0.06);
+  --shadow-md: 0 4px 12px rgba(19,47,69,0.10);
+  --shadow-lg: 0 8px 24px rgba(19,47,69,0.13);
+  --shadow-xl: 0 24px 60px rgba(0,0,0,0.25);
+  --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --navy: #020F59;
+  --navy-foreground: #ffffff;
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: 0 0% 100%;
+  --ring: oklch(0.708 0 0);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --input: oklch(0.922 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar:                    #020F59;
+  --sidebar-foreground:         #ffffff;
+  --sidebar-primary:            #d9a300;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent:             rgba(255, 255, 255, 0.10);
+  --sidebar-accent-foreground:  #ffffff;
+  --sidebar-border:             #1d3f57;
+  --sidebar-ring:               #d9a300;
+}
+
+.dark {
+  --bg-page: #0d1b2a;
+  --bg-surface: #112233;
+  --bg-sidebar: #0a1520;
+  --bg-topbar: #112233;
+  --bg-hover: rgba(255, 255, 255, 0.08);
+  --bg-active: rgba(255, 255, 255, 0.12);
+  --bg-input: #1a2e42;
+  --bg-subtle: #0d1b2a;
+  --bg-cover-overlay: rgba(0, 0, 0, 0.5);
+  --bg-primary: #1a3a5c;
+  --border: oklch(1 0 0 / 10%);
+  --border-light: #1a2e42;
+  --border-sidebar: #162840;
+  --text-primary: #e2ecf4;
+  --text-secondary: #7aafc4;
+  --text-muted: #3d6880;
+  --text-on-sidebar: #5a8fa8;
+  --accent-amber: #1D3067;
+  --accent-orange: #fffd18;
+  --accent-gold: #F3B940;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.35);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
+  --shadow-xl: 0 24px 60px rgba(0,0,0,0.5);
+  --glass-bg: rgba(17, 34, 51, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --navy: #132F45;
+  --navy-foreground: #a0c4d8;
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: 0 0% 98%;
+  --ring: oklch(0.556 0 0);
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --input: oklch(1 0 0 / 15%);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar:                    #0a1520;
+  --sidebar-foreground:         #ffffff;
+  --sidebar-primary:            #F3B940;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent:             rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground:  #ffffff;
+  --sidebar-border:             #162840;
+  --sidebar-ring:               #F3B940;
+}
+
+.styled-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-secondary) transparent;
+}
+
+.styled-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.styled-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.styled-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--text-secondary);
+  border-radius: 999px;
+  transition: background-color 0.2s ease;
+}
+
+.styled-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent-amber);
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-navy: var(--navy);
+  --color-navy-foreground: var(--navy-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-login {
+  animation: fade-in-up 0.5s ease-out both;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out both;
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 0.5s ease-out both;
+}
+
+.animate-fill-forwards {
+  animation-fill-mode: forwards;
+}
+
+.animate-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animate-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animate-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animate-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animate-delay-500 {
+  animation-delay: 500ms;
+}
+
+.animate-delay-600 {
+  animation-delay: 600ms;
+}
+
+@keyframes pageFlip3D {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(-180deg);
+  }
+}
+
+@keyframes pageFlip3DReverse {
+  0% {
+    transform: rotateY(-180deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
+@keyframes pdfSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bookGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0,0,0,0.1), 0 10px 40px rgba(0,0,0,0.15);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0,0,0,0.15), 0 15px 50px rgba(0,0,0,0.2);
+  }
+}
+
+@keyframes pageShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.flipbook-container {
+  --flip-perspective: 2500px;
+  --flip-speed: 0.6s;
+  --page-shadow: 2px 0 10px rgba(0,0,0,0.08), inset -3px 0 6px rgba(0,0,0,0.04);
+  --spine-width: 14px;
+}
+
+.flipbook-page {
+  transform-style: preserve-3d;
+  transform-origin: left center;
+  backface-visibility: hidden;
+}
+
+.flipbook-page-front {
+  backface-visibility: hidden;
+}
+
+.flipbook-page-back {
+  backface-visibility: hidden;
+  transform: rotateY(180deg);
+}
+
+.flipbook-spine {
+  background: linear-gradient(90deg, #374151 0%, #4b5563 30%, #6b7280 50%, #4b5563 70%, #374151 100%);
+  border-radius: 3px 0 0 3px;
+  box-shadow: inset -2px 0 6px rgba(0,0,0,0.4), -3px 0 10px rgba(0,0,0,0.25);
+}
+
+.page-loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: pageShimmer 1.5s ease-in-out infinite;
+}
+
+.flipbook-zoom-transition {
+  transition: transform 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flipbook-page {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ── Realistic page curl for 3D flipbook ── */
+/* 3D flipbook styles */
+
+.page-curl-shadow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0.03) 30%,
+    rgba(0,0,0,0.12) 60%,
+    rgba(0,0,0,0.18) 80%,
+    rgba(0,0,0,0.22) 100%
+  );
+  mix-blend-mode: multiply;
+  transition: opacity 0.3s ease;
+}
+
+.page-curl-bend {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255,255,255,0.08) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  mix-blend-mode: overlay;
+}
+
+/* ── Flipbook 3D Viewer ── */
+.flipbook-root {
+  --flipbook-bg: #1a1a2e;
+  --flipbook-toolbar-bg: rgba(26, 26, 46, 0.85);
+  --flipbook-btn-color: #ffffff;
+  --flipbook-btn-hover-bg: rgba(255, 255, 255, 0.12);
+  --flipbook-accent: #d9a300;
+  --flipbook-panel-bg: rgba(0, 0, 0, 0.8);
+  --flipbook-panel-border: rgba(255, 255, 255, 0.1);
+  --flipbook-text-primary: #ffffff;
+  --flipbook-text-muted: rgba(255, 255, 255, 0.5);
+}
+
+.flipbook-root canvas {
+  touch-action: none;
+}
+
+@keyframes flipbook-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.flipbook-root .flipbook-panel-enter {
+  animation: flipbook-fade-in 0.2s ease-out both;
+}
+
+/* Fullscreen flipbook fixes */
+:fullscreen .flipbook-container,
+:-webkit-full-screen .flipbook-container,
+:-moz-full-screen .flipbook-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100vh !important;
+  width: 100vw !important;
+  overflow: visible !important;
+}
+
+:fullscreen,
+:-webkit-full-screen,
+:-moz-full-screen {
+  overflow: auto !important;
+}
+
+/* Mobile centering fix for closed book/cover */
+@media (max-width: 640px) {
+  .flipbook-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 auto !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+}
+
+/* ── Drag-follow swipe gesture styles ── */
+
+/* Ensure the flipbook container doesn't interfere with touch gestures */
+.flipbook-container,
+.stf__parent,
+.stf__wrapper {
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* The page flip area should capture all pointer events for dragging */
+.stf__wrapper {
+  touch-action: none;
+}
+
+/* Page corner drag affordance - subtle gradient hint on right edge */
+.stf__wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 100%;
+  background: linear-gradient(
+    to left,
+    rgba(0, 0, 0, 0.03) 0%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Show the edge hint on hover (desktop) or when book is ready (mobile) */
+.stf__wrapper:hover::after,
+.stf__wrapper.--portrait::after {
+  opacity: 1;
+}
+
+/* Corner fold visual hint */
+.stf__wrapper .page-corner-hint {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(
+    135deg,
+    transparent 50%,
+    rgba(0, 0, 0, 0.04) 50%,
+    rgba(0, 0, 0, 0.06) 100%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.stf__wrapper:hover .page-corner-hint {
+  opacity: 1;
+}
+
+/* Ensure inner page content doesn't steal touch events from the flipbook */
+.flipbook-container .page-content {
+  touch-action: pan-y;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Disable text selection during drag */
+.stf__wrapper.--user-fold * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Smooth transition for page snap-back */
+.stf__wrapper .stf__page {
+  transition: transform 0.1s ease-out;
+}
+
+/* Ensure the flipbook doesn't cause horizontal scroll on mobile */
+@media (max-width: 640px) {
+  .flipbook-container {
+    overflow-x: hidden;
+    touch-action: pan-y;
+  }
+  
+  .stf__wrapper::after {
+    width: 25px;
+  }
+}
+
+/* Fix 3D flip: ensure page content participates in 3D transforms */
+.stf__item > * {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* ── Profile Card 3D Flip ── */
+/* Named classes so Safari's CSS engine applies webkit prefixes correctly.
+   Tailwind arbitrary values and React inline styles are both unreliable
+   for 3D transforms on iOS Safari — proper CSS classes are the fix. */
+
+.card-flip-container {
+  perspective: 1600px;
+  -webkit-perspective: 1600px;
+}
+
+.card-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.5s ease, -webkit-transform 0.5s ease;
+  transform: rotateY(0deg);
+  -webkit-transform: rotateY(0deg);
+}
+
+.card-flip-inner.is-flipped {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+.card-flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-flip-face--back {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}

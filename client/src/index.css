@@ -461,3 +461,39 @@
     border-color: rgba(204, 31, 31, 0.28);
   }
 }
+
+/* ── Digital ID flippable card ───────────────────────────────────────── */
+/* Match the DIGITAL_ID template: named classes (so Safari applies webkit
+   prefixes for 3D transforms) with a perspective of 1600px. */
+.card-flip-container {
+  perspective: 1600px;
+  -webkit-perspective: 1600px;
+}
+
+.card-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.5s ease, -webkit-transform 0.5s ease;
+  transform: rotateY(0deg);
+  -webkit-transform: rotateY(0deg);
+}
+
+.card-flip-inner.is-flipped {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+.card-flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-flip-face--back {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}

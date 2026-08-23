@@ -176,8 +176,19 @@ export const getAlertsInsights = () => api.get('/alerts/insights');
 export const getMyProfile = () => api.get('/reservists/my/profile');
 export const generateMyQR = () => api.post('/reservists/my/profile/generate-qr');
 export const updateMyProfile = (data) => api.put('/reservists/my/profile', data);
+export const uploadMyAvatar = (formData) =>
+  api.post('/reservists/my/profile/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    // Large image uploads can exceed the global 10s timeout; give it room.
+    timeout: 120000,
+  });
+export const removeMyAvatar = () =>
+  api.delete('/reservists/my/profile/avatar');
 export const getMyTrainings = () => api.get('/reservists/my/trainings');
 export const getMyAttendance = () => api.get('/reservists/my/attendance');
 export const getMyReadiness = () => api.get('/reservists/my/readiness');
+// Public Digital ID — no auth, keyed by QR token (used by the public /id/:token page)
+export const getPublicReservist = (token) =>
+  api.get(`/reservists/public/${encodeURIComponent(token)}`);
 
 export default api;

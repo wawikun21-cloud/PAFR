@@ -26,6 +26,8 @@ const MIGRATIONS = [
   `ALTER TABLE reservists ADD COLUMN IF NOT EXISTS status_vadt tinyint(1) NOT NULL DEFAULT 0`,
   `ALTER TABLE reservists ADD COLUMN IF NOT EXISTS status_rotc tinyint(1) NOT NULL DEFAULT 0`,
   `ALTER TABLE reservists ADD COLUMN IF NOT EXISTS status_others varchar(255) DEFAULT NULL`,
+  `ALTER TABLE reservists ADD COLUMN IF NOT EXISTS avatar_offset_y INT NOT NULL DEFAULT 0`,
+  `ALTER TABLE reservists ADD COLUMN IF NOT EXISTS avatar_offset_x INT NOT NULL DEFAULT 0`,
   `CREATE TABLE IF NOT EXISTS announcements (
     id VARCHAR(36) NOT NULL DEFAULT (UUID()),
     title VARCHAR(255) NOT NULL,
@@ -41,6 +43,18 @@ const MIGRATIONS = [
     KEY idx_priority (priority),
     KEY idx_status (status),
     KEY idx_created (created_at DESC)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  `CREATE TABLE IF NOT EXISTS blob_files (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    reservist_id BIGINT NOT NULL,
+    file_name VARCHAR(255) DEFAULT NULL,
+    mime_type VARCHAR(100) DEFAULT NULL,
+    file_size INT DEFAULT NULL,
+    file_data LONGBLOB,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_reservist (reservist_id),
+    CONSTRAINT fk_blob_reservist FOREIGN KEY (reservist_id) REFERENCES reservists (id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 ];
 

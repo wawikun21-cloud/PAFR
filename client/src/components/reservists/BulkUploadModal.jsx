@@ -66,7 +66,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }) {
         setGroups(groupRes.data.data || []);
       }
     } catch (err) {
-      console.error('Failed to load ARSENs or Groups:', err);
+      console.error('Failed to load ARCENs or Groups:', err);
     } finally {
       setLoadingArsens(false);
       setLoadingGroups(false);
@@ -417,7 +417,7 @@ const handleUpload = async () => {
      }
 
      if (uploadType === UPLOAD_TYPES.POSITION && !selectedArsen) {
-       setError("Please select an ARSEN first");
+       setError("Please select an ARCEN first");
        return;
      }
 
@@ -639,7 +639,7 @@ const handleUpload = async () => {
               {/* ARSEN / Group / Squadron Selection */}
               <div className="space-y-2">
                 <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
-                  Select ARSEN (Air Reserve Squadron Center) <span className="text-red-500">*</span>
+                  Select ARCEN (Air Reserve Squadron Center) <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedArsen || ""}
@@ -662,7 +662,7 @@ const handleUpload = async () => {
                   )}
                 >
                   <option value="">
-                    {loadingArsens ? "Loading ARSENs..." : "Select an ARSEN..."}
+                    {loadingArsens ? "Loading ARCENs..." : "Select an ARCEN..."}
                   </option>
                   {arsens.map((arsen) => (
                     <option key={arsen.id} value={arsen.id}>
@@ -701,7 +701,7 @@ const handleUpload = async () => {
                   )}
                 >
                   <option value="">
-                    {!selectedArsen ? "Select an ARSEN first..." : loadingGroups ? "Loading groups..." : "Select a Group..."}
+                    {!selectedArsen ? "Select an ARCEN first..." : loadingGroups ? "Loading groups..." : "Select a Group..."}
                   </option>
                   {filteredGroups.map((group) => (
                     <option key={group.id} value={group.id}>

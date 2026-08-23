@@ -77,6 +77,11 @@ if (fs.existsSync(clientDist)) {
     console.warn('WARNING: client/dist not found! Build may have failed.');
 }
 
+// Note: profile avatars are stored as BLOBs in the database (blob_files table)
+// and streamed via GET /api/reservists/blob/avatar/:reservistId (a public route
+// so they can be used as an <img src> without an auth token). No static file
+// serving is needed for avatars.
+
 // API Routes
 app.use('/api/auth', loginLimiter, authRoutes);
 app.use('/api/reservists', reservistsRoutes);

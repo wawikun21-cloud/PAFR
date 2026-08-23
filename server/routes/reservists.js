@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const { body, validationResult, query } = require('express-validator');
 const db = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
@@ -6,6 +7,24 @@ const { getUserScopeFilter, requireAdminArsenOrHigher } = require('../middleware
 const { hashPassword, generateResetToken } = require('../app/auth');
 const { logAudit } = require('../utils/auditLogger');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
+
+// Lightweight per-IP throttle for the unauthenticated public Digital ID
+// endpoints (they expose full PII). Not as strict as the login limiter.
+const publicReservistLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30,
+  keyGenerator: (req) => req.ip,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      status: 'error',
+      message: 'Too many requests. Please try again later.',
+      code: 'RATE_LIMITED',
+    });
+  },
+});
 
 const TRAINING_FORBIDDEN_FIELDS = [
   'training_id', 'trainings', 'internal_training_participants',
@@ -2437,7 +2456,11 @@ router.put(
     body('rank').optional().trim(),
     body('phone_number').optional().trim(),
     body('address').optional(),
+    body('bio').optional().isLength({ max: 1000 }),
+    body('avatar_offset_y').optional().isInt({ min: -50, max: 50 }),
+    body('avatar_offset_x').optional().isInt({ min: -50, max: 50 }),
     body('date_of_birth').optional().isISO8601(),
+    body('place_of_birth').optional().trim(),
     body('sex').optional().isIn(['Male', 'Female', 'Other']),
     body('blood_type').optional().isIn(['A+','A-','B+','B-','AB+','AB-','O+','O-','Unknown']),
     body('emergency_contact_name').optional().trim(),
@@ -2445,6 +2468,20 @@ router.put(
     body('emergency_contact_address').optional(),
     body('civil_status').optional().isIn(['Single','Married','Widowed','Separated','Divorced']),
     body('citizenship').optional().trim(),
+    // Educational Background
+    body('highest_education').optional().trim(),
+    body('course_degree').optional().trim(),
+    body('school').optional().trim(),
+    body('year_graduated').optional().trim(),
+    // Military Information (editable subset — Reserve Center, Group, and
+    // Squadron are intentionally NOT accepted here; they remain admin-only
+    // via PUT /reservists/:id and the assignment endpoints)
+    body('position').optional().trim(),
+    body('category').optional().trim(),
+    body('reserve_status').optional().isIn(['Ready Reserve', 'Standby Reserve', 'Retired']),
+    body('source_of_commission').optional().trim(),
+    body('date_enlisted').optional().isISO8601(),
+    body('specialization').optional().trim(),
   ],
   async (req, res) => {
     try {
@@ -2488,10 +2525,19 @@ router.put(
 
       const reservistId = reservist[0].id;
       const allowedFields = [
-        'first_name', 'last_name', 'rank', 'phone_number', 'address',
-        'date_of_birth', 'sex', 'blood_type',
+        // Personal Information
+        'first_name', 'last_name', 'rank', 'phone_number', 'address', 'bio',
+        'avatar_offset_y', 'avatar_offset_x',
+        'date_of_birth', 'place_of_birth', 'sex', 'blood_type',
+        'civil_status', 'citizenship',
+        // Emergency Contact
         'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_address',
-        'civil_status', 'citizenship'
+        // Educational Background
+        'highest_education', 'course_degree', 'school', 'year_graduated',
+        // Military Information (Reserve Center / Group / Squadron deliberately
+        // excluded — those stay read-only and are managed by admins only)
+        'position', 'category', 'reserve_status', 'source_of_commission',
+        'date_enlisted', 'specialization'
       ];
 
       const updateFields = {};
@@ -2592,6 +2638,261 @@ router.post('/my/profile/generate-qr', authenticateToken, async (req, res) => {
       message: 'Failed to generate QR code',
       code: 'GENERATE_ERROR'
     });
+  }
+});
+
+/**
+ * POST /api/reservists/my/profile/avatar
+ * Upload a profile photo (image only, max 2MB). The image bytes are stored
+ * directly in the blob_files table (LONG_BLOB) keyed by reservist_id. The
+ * previous BLOB row for the reservist is deleted first, so a re-upload never
+ * leaves an orphaned row behind. reservists.avatar_url stores the public
+ * serving path (plain <img> tags cannot send the auth token).
+ */
+const AVATAR_ALLOWED_MIME = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp'
+]);
+const AVATAR_ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
+const AVATAR_MAX_BYTES = 10 * 1024 * 1024; // 10MB
+
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: AVATAR_MAX_BYTES },
+  fileFilter: (req, file, cb) => {
+    const mime = String(file.mimetype || '').toLowerCase();
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (!AVATAR_ALLOWED_MIME.has(mime) || !AVATAR_ALLOWED_EXT.has(ext)) {
+      cb(new Error('Only image files (JPEG, PNG, GIF, WEBP) are allowed'));
+    } else {
+      cb(null, true);
+    }
+  }
+});
+
+const avatarServePath = (reservistId) => `/api/reservists/blob/avatar/${reservistId}`;
+
+router.post('/my/profile/avatar', authenticateToken, avatarUpload.single('avatar'), async (req, res) => {
+  let connection;
+  try {
+    if (!req.file) {
+      return res.status(400).json({ status: 'error', message: 'No file provided', code: 'NO_FILE' });
+    }
+
+    const ext = path.extname(req.file.originalname || '').toLowerCase();
+    if (!AVATAR_ALLOWED_EXT.has(ext)) {
+      return res.status(400).json({ status: 'error', message: 'Unsupported image type', code: 'BAD_TYPE' });
+    }
+
+    const [reservists] = await db.query(
+      'SELECT id FROM reservists WHERE user_id = ?',
+      [req.user.id]
+    );
+    if (reservists.length === 0) {
+      return res.status(404).json({ status: 'error', message: 'Reservist profile not found', code: 'NOT_FOUND' });
+    }
+    const reservistId = reservists[0].id;
+
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    // Delete any existing avatar BLOB for this reservist (prevents orphans on replace).
+    await connection.query('DELETE FROM blob_files WHERE reservist_id = ?', [reservistId]);
+
+    // Insert the new image bytes into the BLOB store.
+    await connection.query(
+      'INSERT INTO blob_files (reservist_id, file_name, mime_type, file_size, file_data) VALUES (?, ?, ?, ?, ?)',
+      [reservistId, req.file.originalname, req.file.mimetype, req.file.buffer.length, req.file.buffer]
+    );
+
+    const avatarUrl = avatarServePath(reservistId);
+    await connection.query('UPDATE reservists SET avatar_url = ? WHERE id = ?', [avatarUrl, reservistId]);
+
+    await connection.commit();
+
+    res.json({
+      status: 'success',
+      message: 'Profile photo updated',
+      data: { avatar_url: avatarUrl }
+    });
+  } catch (error) {
+    if (connection) {
+      try { await connection.rollback(); } catch (_) { /* ignore */ }
+    }
+    console.error('Error uploading avatar:', error);
+
+    // Multer validation errors (size / type)
+    if (error instanceof multer.MulterError) {
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          status: 'error',
+          message: `File is too large. Maximum size is ${Math.round(AVATAR_MAX_BYTES / (1024 * 1024))}MB.`,
+          code: 'FILE_TOO_LARGE',
+        });
+      }
+      return res.status(400).json({ status: 'error', message: error.message || 'Invalid file upload', code: 'UPLOAD_ERROR' });
+    }
+
+    // File-filter rejection (wrong type)
+    if (error.message && error.message.toLowerCase().includes('image')) {
+      return res.status(400).json({ status: 'error', message: error.message, code: 'BAD_TYPE' });
+    }
+
+    res.status(500).json({ status: 'error', message: 'Failed to upload profile photo', code: 'UPLOAD_ERROR' });
+  } finally {
+    if (connection) {
+      try { connection.release(); } catch (_) { /* ignore */ }
+    }
+  }
+});
+
+/**
+ * GET /api/reservists/blob/avatar/:reservistId
+ * Streams the stored avatar BLOB back to the client. Intentionally public
+ * (no authenticateToken) so it can be used directly as an <img src> which
+ * strips the Bearer token.
+ */
+router.get('/blob/avatar/:reservistId', async (req, res) => {
+  try {
+    const reservistId = req.params.reservistId;
+    if (!/^\d+$/.test(reservistId)) {
+      return res.status(400).send('Invalid id');
+    }
+    const [rows] = await db.query(
+      'SELECT file_data, mime_type FROM blob_files WHERE reservist_id = ? ORDER BY id DESC LIMIT 1',
+      [reservistId]
+    );
+    if (rows.length === 0) {
+      return res.status(404).send('Avatar not found');
+    }
+    const row = rows[0];
+    res.set('Content-Type', row.mime_type || 'application/octet-stream');
+    res.set('Cache-Control', 'no-cache');
+    res.send(row.file_data);
+  } catch (error) {
+    console.error('Error serving avatar:', error);
+    res.status(500).send('Error serving avatar');
+  }
+});
+
+/**
+ * GET /api/reservists/public/avatar/:qrCode
+ * Streams the stored avatar BLOB for a reservist resolved by their public QR
+ * token. Intentionally public (no authenticateToken) — mirrors the
+ * `/blob/avatar/:reservistId` route but keyed by the QR token so it can be
+ * used directly as an <img src> on the public Digital ID page.
+ * Registered BEFORE `/public/:qrCode` so the specific path wins.
+ */
+router.get('/public/avatar/:qrCode', publicReservistLimiter, async (req, res) => {
+  try {
+    const qrCode = req.params.qrCode;
+    const [reservists] = await db.query(
+      'SELECT id FROM reservists WHERE qr_code = ? AND is_active = TRUE',
+      [qrCode]
+    );
+    if (reservists.length === 0) {
+      return res.status(404).send('Avatar not found');
+    }
+    const reservistId = reservists[0].id;
+    const [rows] = await db.query(
+      'SELECT file_data, mime_type FROM blob_files WHERE reservist_id = ? ORDER BY id DESC LIMIT 1',
+      [reservistId]
+    );
+    if (rows.length === 0) {
+      return res.status(404).send('Avatar not found');
+    }
+    const row = rows[0];
+    res.set('Content-Type', row.mime_type || 'application/octet-stream');
+    res.set('Cache-Control', 'no-cache');
+    res.send(row.file_data);
+  } catch (error) {
+    console.error('Error serving public avatar:', error);
+    res.status(500).send('Error serving avatar');
+  }
+});
+
+/**
+ * GET /api/reservists/public/:qrCode
+ * Public, no-login read of a reservist's Digital ID, resolved by their QR
+ * token. Returns only an allow-list of non-credential columns. 404 if the
+ * token is unknown or the reservist is inactive.
+ */
+router.get('/public/:qrCode', publicReservistLimiter, async (req, res) => {
+  try {
+    const qrCode = req.params.qrCode;
+    const [rows] = await db.query(`
+      SELECT
+        r.id, r.first_name, r.last_name, r.rank, r.service_number,
+        r.bio, r.position, r.category, r.reserve_status, r.address,
+        r.emergency_contact_name, r.emergency_contact_phone,
+        r.qr_code, r.avatar_url,
+        ra.id as assignment_id, ra.group_id, ra.squadron_id, ra.assigned_date,
+        g.name as group_name, g.code as group_code,
+        s.name as squadron_name, s.location
+      FROM reservists r
+      LEFT JOIN reservist_assignments ra ON r.id = ra.reservist_id AND ra.is_primary = TRUE
+      LEFT JOIN \`groups\` g ON ra.group_id = g.id
+      LEFT JOIN squadron s ON ra.squadron_id = s.id
+      WHERE r.qr_code = ? AND r.is_active = TRUE
+    `, [qrCode]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Digital ID not found',
+        code: 'NOT_FOUND',
+      });
+    }
+
+    const profile = rows[0];
+    // Point the card's avatar at the public (token-keyed) avatar route.
+    profile.avatar_url = `/api/reservists/public/avatar/${encodeURIComponent(qrCode)}`;
+
+    res.json({ status: 'success', data: profile });
+  } catch (error) {
+    console.error('Error fetching public reservist:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch public profile',
+      code: 'FETCH_ERROR',
+    });
+  }
+});
+
+/**
+ * DELETE /api/reservists/my/profile/avatar
+ * Removes the reservist's avatar: deletes the BLOB row and clears avatar_url.
+ */
+router.delete('/my/profile/avatar', authenticateToken, async (req, res) => {
+  let connection;
+  try {
+    const [reservists] = await db.query(
+      'SELECT id FROM reservists WHERE user_id = ?',
+      [req.user.id]
+    );
+    if (reservists.length === 0) {
+      return res.status(404).json({ status: 'error', message: 'Reservist profile not found', code: 'NOT_FOUND' });
+    }
+    const reservistId = reservists[0].id;
+
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    await connection.query('DELETE FROM blob_files WHERE reservist_id = ?', [reservistId]);
+    await connection.query('UPDATE reservists SET avatar_url = NULL WHERE id = ?', [reservistId]);
+
+    await connection.commit();
+
+    res.json({ status: 'success', message: 'Avatar removed' });
+  } catch (error) {
+    if (connection) {
+      try { await connection.rollback(); } catch (_) { /* ignore */ }
+    }
+    console.error('Error removing avatar:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to remove profile photo', code: 'REMOVE_ERROR' });
+  } finally {
+    if (connection) {
+      try { connection.release(); } catch (_) { /* ignore */ }
+    }
   }
 });
 

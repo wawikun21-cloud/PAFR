@@ -14,6 +14,7 @@ import {
   getMyAttendance,
 } from '@/services/attendanceApiService';
 import { useAuth } from '@/contexts/AuthContext';
+import { normalizeScannedQR } from '@/lib/qr';
 
 export default function Attendance() {
   const { isReservist } = useAuth();
@@ -108,11 +109,12 @@ export default function Attendance() {
   };
 
   const handleScan = async (qrCode, scanMethod) => {
+    const token = normalizeScannedQR(qrCode);
     let response;
     if (eventType === 'internal') {
-      response = await scanInternalTraining(trainingId, qrCode, scanMethod);
+      response = await scanInternalTraining(trainingId, token, scanMethod);
     } else {
-      response = await scanExternalTraining(trainingId, qrCode, scanMethod);
+      response = await scanExternalTraining(trainingId, token, scanMethod);
     }
     await loadAttendance();
     return response?.data?.data;

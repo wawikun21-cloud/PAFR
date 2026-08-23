@@ -22,6 +22,7 @@ const Alerts            = lazy(() => import("@/pages/Alerts"));
 const AuditLogs         = lazy(() => import("@/pages/AuditLogs"));
 const Announcements     = lazy(() => import("@/pages/Announcements"));
 const Login             = lazy(() => import("@/pages/Login"));
+const PublicReservist   = lazy(() => import("@/pages/PublicReservist"));
 
 // Airbase pages
 const AirbaseOverview   = lazy(() => import("@/pages/airbase/AirbaseOverview"));
@@ -122,6 +123,12 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: wrap(Login),
+  },
+  {
+    // Public, no-login Digital ID view — sits outside ProtectedLayout so it
+    // has no sidebar/nav. SPA fallback serves the app shell on refresh.
+    path: "/id/:token",
+    element: wrap(PublicReservist),
   },
   {
     path: "/",
